@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Nunito", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+@layer base {
+  html,
+  body {
+    height: 100%;
+    height: 100dvh;
+    overflow: hidden;
+    overscroll-behavior: none;
+    font-family: var(--font-sans);
+    background-color: #fffdf8;
+    color: #1e293b;
+  }
+
+  h1, h2, h3, h4, .font-display {
+    font-family: var(--font-display);
+  }
+
+  code, pre, .font-mono {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Soft pastel scrollbars for warm studio workspace */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.38);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.55);
+}
+
+/* Custom rounded pastel scrollbar for 14-week syllabus drawer */
+.pastel-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #93c5fd #fff7ed;
+}
+
+.pastel-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.pastel-scrollbar::-webkit-scrollbar-track {
+  background: #fff7ed;
+  border-radius: 9999px;
+  margin-block: 6px;
+}
+
+.pastel-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #7dd3fc 0%, #fda4af 100%);
+  border-radius: 9999px;
+  border: 2px solid #fff7ed;
+}
+
+.pastel-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #38bdf8 0%, #fb7185 100%);
+}
+
+.signal-glow-high {
+  filter: drop-shadow(0 0 5px rgba(16, 185, 129, 0.45));
+}
+
+.canvas-grid-bg {
+  background-color: #fffdf9;
+  background-image:
+    radial-gradient(circle, #e5e0d8 1.5px, transparent 1.5px);
+  background-size: 20px 20px;
+}
+
+@keyframes pinSnapPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.95;
+  }
+  50% {
+    transform: scale(1.22);
+    opacity: 0.65;
+  }
+}
+
+.pin-snap-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pinSnapPulse 0.75s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}

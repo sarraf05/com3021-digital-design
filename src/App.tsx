@@ -244,9 +244,9 @@ export default function App() {
   };
 
   return (
-    <div key={resetEpoch} className="h-[100dvh] w-screen overflow-hidden bg-[#FFFDF8] text-slate-800 flex flex-col">
+    <div key={resetEpoch} className="h-[100dvh] w-full max-w-full overflow-hidden overflow-x-hidden bg-[#FFFDF8] text-slate-800 flex flex-col">
       {/* Responsive Top Navigation Bar */}
-      <header className="shrink-0 z-50 h-14 md:h-16 border-b-2 border-slate-200/80 bg-white/95 backdrop-blur px-2 sm:px-4 lg:px-6 flex items-center justify-between gap-1 sm:gap-3 lg:gap-6">
+      <header className="shrink-0 z-50 h-14 md:h-16 w-full max-w-full overflow-hidden border-b-2 border-slate-200/80 bg-white/95 backdrop-blur px-2.5 sm:px-4 lg:px-6 flex items-center justify-between gap-1.5 sm:gap-3 lg:gap-6">
         {/* Zone 1: Cute Hamburger Button + Brand Wordmark */}
         <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 shrink-0 min-w-0">
           <button
@@ -300,12 +300,12 @@ export default function App() {
         {/* Mobile (< 768px) Compact Icon+Label Navigation Pills */}
         <nav
           aria-label={ui.header.mobileNavLabel}
-          className="flex md:hidden items-center gap-0.5 sm:gap-1 shrink-0"
+          className="flex md:hidden items-center gap-1 shrink-0"
         >
           <button
             type="button"
             onClick={() => handleSwitchView('curriculum')}
-            className={`flex items-center gap-1 min-h-[38px] px-1.5 sm:px-2 py-1.5 rounded-xl border-2 text-[11px] font-extrabold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+            className={`flex items-center gap-1 min-h-[38px] px-2 sm:px-2.5 py-1.5 rounded-xl border-2 text-[11px] font-extrabold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
               activeView === 'curriculum'
                 ? 'bg-sky-100 border-sky-300 text-sky-800 shadow-xs'
                 : 'bg-white border-transparent text-slate-500 hover:text-slate-800'
@@ -317,7 +317,7 @@ export default function App() {
           <button
             type="button"
             onClick={() => handleSwitchView('tools')}
-            className={`flex items-center gap-1 min-h-[38px] px-1.5 sm:px-2 py-1.5 rounded-xl border-2 text-[11px] font-extrabold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+            className={`flex items-center gap-1 min-h-[38px] px-2 sm:px-2.5 py-1.5 rounded-xl border-2 text-[11px] font-extrabold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
               activeView === 'tools'
                 ? 'bg-violet-100 border-violet-300 text-violet-800 shadow-xs'
                 : 'bg-white border-transparent text-slate-500 hover:text-slate-800'
@@ -329,7 +329,7 @@ export default function App() {
           <button
             type="button"
             onClick={() => handleSwitchView('simulator')}
-            className={`flex items-center gap-1 min-h-[38px] px-1.5 sm:px-2 py-1.5 rounded-xl border-2 text-[11px] font-extrabold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+            className={`flex items-center gap-1 min-h-[38px] px-2 sm:px-2.5 py-1.5 rounded-xl border-2 text-[11px] font-extrabold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
               activeView === 'simulator'
                 ? 'bg-emerald-500 border-emerald-600 text-white shadow-xs'
                 : 'bg-emerald-50 border-emerald-200 text-emerald-700'
@@ -338,22 +338,10 @@ export default function App() {
             <Cpu className="w-3.5 h-3.5 shrink-0" />
             <span>{ui.header.tabLabMobile}</span>
           </button>
-          <button
-            type="button"
-            onClick={() => handleSwitchView('book')}
-            className={`flex items-center gap-1 min-h-[38px] px-1.5 sm:px-2 py-1.5 rounded-xl border-2 text-[11px] font-extrabold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
-              activeView === 'book'
-                ? 'bg-amber-100 border-amber-300 text-amber-900 shadow-xs'
-                : 'bg-amber-50/70 border-amber-200/80 text-amber-800 hover:bg-amber-100/70'
-            }`}
-          >
-            <BookMarked className="w-3.5 h-3.5 shrink-0" />
-            <span>{ui.header.tabBookMobile}</span>
-          </button>
         </nav>
 
         {/* Zone 2: Tablet & Desktop Single-Line Navigation Links */}
-        <nav className="hidden md:flex items-center gap-4 lg:gap-6 text-xs lg:text-sm font-bold">
+        <nav className="hidden md:flex items-center gap-5 lg:gap-7 text-xs lg:text-sm font-bold">
           <button
             type="button"
             onClick={() => handleSwitchView('curriculum')}
@@ -386,17 +374,6 @@ export default function App() {
             }`}
           >
             {ui.header.tabLabDesktop}
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSwitchView('book')}
-            className={`min-h-[36px] px-3 py-1.5 rounded-2xl border-2 border-b-[3px] active:border-b-2 active:translate-y-0.5 text-xs font-display font-extrabold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
-              activeView === 'book'
-                ? 'bg-amber-400 border-amber-500 text-slate-900 shadow-xs'
-                : 'bg-amber-50 hover:bg-amber-100 border-amber-200 hover:border-amber-300 text-amber-900'
-            }`}
-          >
-            {ui.header.tabBookDesktop}
           </button>
         </nav>
 
@@ -532,11 +509,43 @@ export default function App() {
 
           {/* Independent Drawer Scroll Container (No scroll chaining) */}
           <nav
-            className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain pastel-scrollbar p-3 space-y-1.5"
+            className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain pastel-scrollbar px-3 pb-3 pt-2 space-y-1.5"
             aria-label={ui.drawer.planAria}
           >
+            {/* Sticky Pinned Textbook Card above Week 1 */}
+            <div className="sticky top-0 z-10 -mx-1 px-1 pt-0.5 pb-2 bg-white/95 backdrop-blur-xs">
+              <button
+                type="button"
+                onClick={() => handleSwitchView('book')}
+                className={`w-full min-h-[54px] text-left px-3 py-2.5 rounded-2xl border-2 border-b-4 active:border-b-2 active:translate-y-0.5 transition-all cursor-pointer flex items-center gap-2.5 shadow-xs ${
+                  activeView === 'book'
+                    ? 'bg-gradient-to-r from-amber-300 via-amber-200 to-rose-200 border-amber-500 text-slate-900'
+                    : 'bg-gradient-to-r from-amber-100/90 via-amber-50 to-rose-50/90 hover:from-amber-200/80 hover:to-rose-100/80 border-amber-300 text-slate-900'
+                }`}
+              >
+                <span
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border ${
+                    activeView === 'book'
+                      ? 'bg-amber-600 border-amber-700 text-white'
+                      : 'bg-white border-amber-200 text-amber-600'
+                  }`}
+                >
+                  <BookMarked className="w-4 h-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-display font-black leading-snug text-slate-900 truncate">
+                    {ui.drawer.bookPdfTitle}
+                  </div>
+                  <div className="text-[11px] font-bold text-amber-900/80 mt-0.5 truncate">
+                    {ui.drawer.bookPdfSubtitle}
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-amber-700 shrink-0" />
+              </button>
+            </div>
+
             {WEEKS.map((w) => {
-              const isActive = w.id === selectedWeekId;
+              const isActive = activeView !== 'book' && w.id === selectedWeekId;
               const theme = w.isExam
                 ? WEEK_THEMES[4]
                 : WEEK_THEMES[(w.weekNumber - 1) % WEEK_THEMES.length];
@@ -655,8 +664,8 @@ export default function App() {
         {/* Independent Main Content Container */}
         <main
           ref={mainRef}
-          className={`flex-1 min-w-0 h-full ${
-            activeView === 'simulator' || activeView === 'book'
+          className={`flex-1 min-w-0 h-full overflow-x-hidden ${
+            activeView === 'simulator'
               ? 'overflow-hidden'
               : 'overflow-y-auto overscroll-y-contain'
           }`}
@@ -747,7 +756,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => openBookAtPage(activeWeekBookEntry.page)}
-                    className="self-start min-h-[42px] px-3.5 py-2 rounded-2xl border-2 border-amber-300 border-b-4 bg-amber-50 hover:bg-amber-100 active:border-b-2 active:translate-y-0.5 text-amber-950 text-xs font-display font-extrabold inline-flex items-center gap-1.5 shadow-xs transition-all whitespace-nowrap shrink-0 cursor-pointer"
+                    className="w-full sm:w-auto self-start min-h-[42px] px-3.5 py-2 rounded-2xl border-2 border-amber-300 border-b-4 bg-amber-50 hover:bg-amber-100 active:border-b-2 active:translate-y-0.5 text-amber-950 text-xs font-display font-extrabold inline-flex items-center justify-center sm:justify-start gap-1.5 shadow-xs transition-all whitespace-nowrap shrink-0 cursor-pointer"
                   >
                     <span>{ui.curriculum.openInBook(activeWeekBookEntry.page)}</span>
                   </button>

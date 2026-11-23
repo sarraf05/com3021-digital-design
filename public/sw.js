@@ -17,6 +17,7 @@ const ALLOWED_EXTERNAL_HOSTS = [
   'fonts.gstatic.com',
   'cdn.jsdelivr.net',
   'unpkg.com',
+  'cdnjs.cloudflare.com',
 ];
 
 function isCacheableResponse(response) {

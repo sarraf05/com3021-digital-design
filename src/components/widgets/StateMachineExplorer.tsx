@@ -1,6 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { GitCommitHorizontal, Play, RotateCcw } from 'lucide-react';
 import type { WidgetConfig } from '../../types/curriculum';
+import { useSession } from '../../context/SessionContext';
+import { UI_STRINGS } from '../../i18n/translations';
 
 interface StateMachineExplorerProps {
   config?: WidgetConfig;
@@ -51,10 +53,46 @@ function jkExcitation(q: 0 | 1, qNext: 0 | 1): { j: string; k: string } {
 export const StateMachineExplorer: React.FC<StateMachineExplorerProps> = ({
   studioMode = false,
 }) => {
-  const [currentState, setCurrentState] = useState<StateId>('S0');
-  const [lastTransition, setLastTransition] = useState<TransitionDef>(TRANSITIONS[1]);
-  const [ffMode, setFfMode] = useState<'D' | 'JK'>('D');
-  const [history, setHistory] = useState<string[]>(['S0']);
+  const { session, updateToolsState } = useSession();
+  const sm = UI_STRINGS[session.language].stateMachine;
+  const savedSmRef = useRef(studioMode ? session.tools.stateMachine : undefined);
+
+  const [currentState, setCurrentState] = useState<StateId>(
+    savedSmRef.current?.currentState ?? 'S0'
+  );
+  const [lastTransition, setLastTransition] = useState<TransitionDef>(() => {
+    if (savedSmRef.current) {
+      return (
+        TRANSITIONS.find(
+          (t) =>
+            t.next === savedSmRef.current?.currentState &&
+            t.input === savedSmRef.current?.lastInput
+        ) ?? TRANSITIONS[1]
+      );
+    }
+    return TRANSITIONS[1];
+  });
+  const [ffMode, setFfMode] = useState<'D' | 'JK'>(
+    savedSmRef.current?.ffMode ?? 'D'
+  );
+  const [history, setHistory] = useState<string[]>(
+    savedSmRef.current?.history ?? ['S0']
+  );
+
+  const skipFirstSyncRef = useRef(true);
+  useEffect(() => {
+    if (!studioMode) return;
+    if (skipFirstSyncRef.current) {
+      skipFirstSyncRef.current = false;
+      return;
+    }
+    updateToolsState('stateMachine', {
+      currentState,
+      lastInput: lastTransition.input,
+      ffMode,
+      history,
+    });
+  }, [studioMode, currentState, lastTransition, ffMode, history, updateToolsState]);
 
   const activePreview = useMemo(
     () =>
@@ -93,10 +131,10 @@ export const StateMachineExplorer: React.FC<StateMachineExplorerProps> = ({
           </span>
           <div className="min-w-0">
             <h4 className="font-display font-extrabold text-sm sm:text-base text-slate-800 leading-tight">
-              State Machine Explorer (101 Mealy Detector)
+              {sm.title}
             </h4>
             <p className="text-[11px] font-medium text-slate-500 truncate">
-              Giriş = 0 veya Giriş = 1 darbesi gönderin; aktif geçişi ve uyarma tablosunu izleyin
+              {sm.subtitle}
             </p>
           </div>
         </div>
@@ -114,7 +152,7 @@ export const StateMachineExplorer: React.FC<StateMachineExplorerProps> = ({
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                {m} Excitation
+                {m} {sm.excitationSuffix}
               </button>
             ))}
           </div>
@@ -125,7 +163,7 @@ export const StateMachineExplorer: React.FC<StateMachineExplorerProps> = ({
             className="min-h-[40px] md:min-h-0 flex items-center gap-1 px-2.5 py-1.5 rounded-2xl border-2 border-rose-200 border-b-4 bg-rose-50 hover:bg-rose-100 active:border-b-2 text-xs font-bold text-rose-700 cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>Sıfırla</span>
+            <span>{sm.reset}</span>
           </button>
         </div>
       </div>
@@ -141,7 +179,7 @@ export const StateMachineExplorer: React.FC<StateMachineExplorerProps> = ({
               className="min-h-[44px] flex items-center justify-center gap-1.5 py-2 px-3 rounded-2xl bg-sky-500 hover:bg-sky-600 border-2 border-sky-600 border-b-4 active:border-b-2 text-white text-xs font-extrabold transition-all cursor-pointer"
             >
               <Play className="w-3.5 h-3.5" />
-              <span>Giriş = 0</span>
+              <span>{sm.inputZero}</span>
             </button>
             <button
               type="button"
@@ -149,7 +187,7 @@ export const StateMachineExplorer: React.FC<StateMachineExplorerProps> = ({
               className="min-h-[44px] flex items-center justify-center gap-1.5 py-2 px-3 rounded-2xl bg-emerald-500 hover:bg-emerald-600 border-2 border-emerald-600 border-b-4 active:border-b-2 text-white text-xs font-extrabold transition-all cursor-pointer"
             >
               <Play className="w-3.5 h-3.5" />
-              <span>Giriş = 1</span>
+              <span>{sm.inputOne}</span>
             </button>
           </div>
 
@@ -257,7 +295,7 @@ export const StateMachineExplorer: React.FC<StateMachineExplorerProps> = ({
 
           <div className="bg-emerald-50/70 border-2 border-emerald-200 rounded-xl px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono">
             <span className="font-bold text-slate-700">
-              Son Geçiş:{' '}
+              {sm.lastTransition}{' '}
               <strong className="text-emerald-700">
                 {lastTransition.from} → {lastTransition.next}
               </strong>{' '}
@@ -268,7 +306,7 @@ export const StateMachineExplorer: React.FC<StateMachineExplorerProps> = ({
               )
             </span>
             <span className="text-sky-700 font-bold truncate">
-              İz: {history.join(' → ')}
+              {sm.trace} {history.join(' → ')}
             </span>
           </div>
         </div>
@@ -279,7 +317,7 @@ export const StateMachineExplorer: React.FC<StateMachineExplorerProps> = ({
             <table className="w-full text-xs font-mono">
               <thead>
                 <tr className="border-b-2 border-slate-100 bg-slate-50 text-slate-500">
-                  <th className="py-2 px-2.5 text-left font-bold">Geçiş</th>
+                  <th className="py-2 px-2.5 text-left font-bold">{sm.transitionCol}</th>
                   <th className="py-2 px-2 text-center font-bold">Q1 Q0</th>
                   <th className="py-2 px-2 text-center font-bold">x</th>
                   <th className="py-2 px-2 text-center font-bold">Q1+ Q0+</th>
@@ -361,13 +399,13 @@ export const StateMachineExplorer: React.FC<StateMachineExplorerProps> = ({
           {/* Excitation Summary Card */}
           <div className="bg-violet-50/60 border-2 border-violet-200 rounded-2xl px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs font-mono font-bold text-violet-900">
             <span>
-              Mevcut Durum: <strong className="text-emerald-700">{currentState}</strong> (
+              {sm.currentState} <strong className="text-emerald-700">{currentState}</strong> (
               {STATE_BITS[currentState].join('')})
             </span>
             <span>
               {ffMode === 'D'
                 ? 'D₁ = Q₁+ , D₀ = Q₀+'
-                : 'JK Uyarma: 0→0 (0X), 0→1 (1X), 1→0 (X1), 1→1 (X0)'}
+                : sm.jkExcitationRule}
             </span>
           </div>
         </div>

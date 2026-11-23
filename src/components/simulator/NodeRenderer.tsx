@@ -1,9 +1,16 @@
 import React from 'react';
-import { COMPONENT_CATALOG } from '../../engine/componentCatalog';
-import type { CircuitNode, LogicValue, PinDefinition } from '../../types/simulator';
+import { getNodeMeta } from '../../engine/componentCatalog';
+import type {
+  CircuitNode,
+  CustomICColor,
+  CustomICDefinition,
+  LogicValue,
+  PinDefinition,
+} from '../../types/simulator';
 
 interface NodeRendererProps {
   node: CircuitNode;
+  customICs?: CustomICDefinition[];
   selected: boolean;
   connectingFrom: {
     nodeId: string;
@@ -53,8 +60,26 @@ interface GatePalette {
   text: string;
 }
 
-function getGatePalette(type: CircuitNode['type']): GatePalette {
-  switch (type) {
+const CUSTOM_IC_THEMES: Record<CustomICColor, GatePalette> = {
+  mint: { fill: '#ECFDF5', stroke: '#10B981', lip: '#6EE7B7', text: '#065F46' },
+  sky: { fill: '#F0F9FF', stroke: '#0EA5E9', lip: '#7DD3FC', text: '#0369A1' },
+  coral: { fill: '#FFF1F2', stroke: '#F43F5E', lip: '#FDA4AF', text: '#BE123C' },
+  violet: { fill: '#F5F3FF', stroke: '#8B5CF6', lip: '#C4B5FD', text: '#5B21B6' },
+  amber: { fill: '#FFFBEB', stroke: '#F59E0B', lip: '#FCD34D', text: '#92400E' },
+};
+
+function getGatePalette(
+  node: CircuitNode,
+  customICs: CustomICDefinition[]
+): GatePalette {
+  if (node.type === 'CUSTOM_IC') {
+    const bp = node.customIcId
+      ? customICs.find((ic) => ic.id === node.customIcId)
+      : undefined;
+    const color = bp?.color ?? node.customIcColor ?? 'violet';
+    return CUSTOM_IC_THEMES[color];
+  }
+  switch (node.type) {
     case 'AND':
     case 'NAND':
     case 'AND3':
@@ -103,6 +128,7 @@ function getGatePalette(type: CircuitNode['type']): GatePalette {
 
 export const NodeRenderer: React.FC<NodeRendererProps> = ({
   node,
+  customICs = [],
   selected,
   connectingFrom,
   snappedPinKey,
@@ -118,8 +144,8 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
   onClockStepPulse,
   onContextMenuNode,
 }) => {
-  const meta = COMPONENT_CATALOG[node.type];
-  const pal = getGatePalette(node.type);
+  const meta = getNodeMeta(node, customICs);
+  const pal = getGatePalette(node, customICs);
   const outVal = node.outputs.out ?? 0;
 
   const isBasicGate =
@@ -417,22 +443,35 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
             stroke={selected ? '#0EA5E9' : outVal === 1 ? '#10B981' : '#94A3B8'}
             strokeWidth={2.5}
           />
+
+          {/* Output stem leading directly to exact pin (84, 24) */}
+          <line
+            x1={64}
+            y1={24}
+            x2={meta.width}
+            y2={24}
+            stroke={outVal === 1 ? '#10B981' : '#94A3B8'}
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            style={{ pointerEvents: 'none' }}
+          />
+
           <text
-            x={12}
-            y={21}
+            x={10}
+            y={20}
             fontSize="11.5"
             fontWeight="800"
             fontFamily="JetBrains Mono, monospace"
             fill="#1E293B"
             style={{ pointerEvents: 'none' }}
           >
-            {node.label.slice(0, 6)}
+            {node.label.slice(0, 4)}
           </text>
           <text
-            x={12}
+            x={10}
             y={36}
-            fontSize="9.5"
-            fontWeight="700"
+            fontSize="9"
+            fontWeight="800"
             fontFamily="Nunito, sans-serif"
             fill={outVal === 1 ? '#059669' : '#64748B'}
             style={{ pointerEvents: 'none' }}
@@ -440,37 +479,55 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
             {outVal === 1 ? 'AÇIK' : 'KAPALI'}
           </text>
 
-          {/* Clickable tactile toggle pill */}
-          <g
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleSwitch(node.id);
-            }}
-            style={{ cursor: 'pointer' }}
-          >
+          {/* Glowing ON halo when latched to 1 */}
+          {outVal === 1 && (
             <rect
-              x={48}
-              y={12}
-              width={28}
-              height={24}
-              rx={8}
-              fill={outVal === 1 ? '#10B981' : '#E2E8F0'}
-              stroke={outVal === 1 ? '#047857' : '#94A3B8'}
-              strokeWidth={1.8}
+              x={34}
+              y={6}
+              width={32}
+              height={36}
+              rx={11}
+              fill="#34D399"
+              opacity={0.28}
+              style={{ pointerEvents: 'none' }}
             />
-            <text
-              x={62}
-              y={28.5}
-              textAnchor="middle"
-              fontSize="12"
-              fontWeight="800"
-              fontFamily="JetBrains Mono, monospace"
-              fill={outVal === 1 ? '#FFFFFF' : '#475569'}
-            >
-              {outVal}
-            </text>
-          </g>
+          )}
+
+          {/* Tactile Latching Pill (1 = Mint Emerald, 0 = Soft Slate) */}
+          <rect
+            x={36}
+            y={8}
+            width={28}
+            height={32}
+            rx={9}
+            fill={outVal === 1 ? '#10B981' : '#E2E8F0'}
+            stroke={outVal === 1 ? '#047857' : '#94A3B8'}
+            strokeWidth={2}
+            style={{ pointerEvents: 'none' }}
+          />
+          <text
+            x={50}
+            y={29}
+            textAnchor="middle"
+            fontSize="13.5"
+            fontWeight="900"
+            fontFamily="JetBrains Mono, monospace"
+            fill={outVal === 1 ? '#FFFFFF' : '#475569'}
+            style={{ pointerEvents: 'none' }}
+          >
+            {outVal}
+          </text>
+
+          {/* Generous >= 44x44 interactive tap hitbox clear of the right output pin */}
+          <rect
+            x={22}
+            y={2}
+            width={44}
+            height={44}
+            rx={10}
+            fill="transparent"
+            style={{ cursor: 'pointer' }}
+          />
         </>
       )}
 
@@ -844,31 +901,34 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
             />
             {/* Centered chip title badge (clear of left/right edge pin labels) */}
             <rect
-              x={16}
+              x={node.type === 'CUSTOM_IC' ? 10 : 16}
               y={5}
-              width={Math.max(52, meta.width - 32)}
-              height={16}
+              width={node.type === 'CUSTOM_IC' ? meta.width - 20 : Math.max(52, meta.width - 32)}
+              height={17}
               rx={6}
               fill="#FFFFFF"
-              opacity={0.88}
+              opacity={0.92}
             />
             <text
               x={meta.width / 2}
-              y={16}
+              y={16.5}
               textAnchor="middle"
               fontSize="9.5"
               fontWeight="800"
               fontFamily="Nunito, sans-serif"
               fill={pal.text}
+              style={{ pointerEvents: 'none' }}
             >
-              {node.label}
+              {node.type === 'CUSTOM_IC'
+                ? `🧩 ${node.label.slice(0, 12)}`
+                : node.label}
             </text>
 
             {/* Subtle dashed separator between data pins and select/enable control pins on left side */}
             {(() => {
               const leftInPins = meta.pins.filter((p) => p.direction === 'in');
               const firstCtrlIdx = leftInPins.findIndex((p) => p.role === 'control');
-              if (firstCtrlIdx > 0 && meta.category === 'MSI Bloklar') {
+              if (firstCtrlIdx > 0 && meta.category === 'MSI Bloklar' && node.type !== 'CUSTOM_IC') {
                 const prevPin = leftInPins[firstCtrlIdx - 1];
                 const ctrlPin = leftInPins[firstCtrlIdx];
                 const sepY = Math.round((prevPin.relY + ctrlPin.relY) / 2);
@@ -906,7 +966,7 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
                     fontFamily="JetBrains Mono, monospace"
                     fill={isControl ? ctrlColor : '#334155'}
                   >
-                    {p.id === 'clk' ? '▷CLK' : p.name}
+                    {p.id === 'clk' ? '▷CLK' : p.name.slice(0, 6)}
                   </text>
                 );
               }
@@ -922,7 +982,7 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
                   fontFamily="JetBrains Mono, monospace"
                   fill={activePin ? '#059669' : '#475569'}
                 >
-                  {p.name}
+                  {p.name.slice(0, 6)}
                 </text>
               );
             })}

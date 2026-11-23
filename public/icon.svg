@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="40" y1="32" x2="472" y2="480" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFDF8" />
+      <stop offset="52%" stop-color="#FFE4EC" />
+      <stop offset="100%" stop-color="#E0F2FE" />
+    </linearGradient>
+    <linearGradient id="gateGrad" x1="156" y1="148" x2="352" y2="364" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FF6B8B" />
+      <stop offset="100%" stop-color="#FB7185" />
+    </linearGradient>
+    <linearGradient id="innerHighlight" x1="176" y1="168" x2="310" y2="280" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.45" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+
+  <!-- Soft pastel rounded square canvas -->
+  <rect x="24" y="24" width="464" height="464" rx="116" fill="url(#bgGrad)" stroke="#FECDD3" stroke-width="10" />
+
+  <!-- Subtle pastel sparkles in safe zone -->
+  <circle cx="116" cy="120" r="10" fill="#38BDF8" opacity="0.65" />
+  <circle cx="398" cy="128" r="12" fill="#34D399" opacity="0.7" />
+  <circle cx="394" cy="392" r="9" fill="#A78BFA" opacity="0.6" />
+
+  <!-- Input wires (A & B) -->
+  <path d="M98 204 H164" stroke="#334155" stroke-width="18" stroke-linecap="round" />
+  <path d="M98 308 H164" stroke="#334155" stroke-width="18" stroke-linecap="round" />
+
+  <!-- Cute input pin dots -->
+  <circle cx="96" cy="204" r="18" fill="#38BDF8" stroke="#0284C7" stroke-width="6" />
+  <circle cx="96" cy="308" r="18" fill="#A78BFA" stroke="#7C3AED" stroke-width="6" />
+
+  <!-- Output wire & NAND/Logic bubble -->
+  <path d="M366 256 H414" stroke="#334155" stroke-width="18" stroke-linecap="round" />
+  <circle cx="354" cy="256" r="17" fill="#FFFDF8" stroke="#334155" stroke-width="10" />
+  <circle cx="416" cy="256" r="20" fill="#34D399" stroke="#059669" stroke-width="6" />
+
+  <!-- Cute rounded logic gate body -->
+  <path
+    d="M168 156 H244 C300 156 340 200 340 256 C340 312 300 356 244 356 H168 C160 356 154 350 154 342 V170 C154 162 160 156 168 156 Z"
+    fill="url(#gateGrad)"
+    stroke="#334155"
+    stroke-width="12"
+    stroke-linejoin="round"
+  />
+
+  <!-- Glossy top highlight -->
+  <path
+    d="M174 172 H240 C278 172 308 196 318 230 C280 218 220 214 174 226 Z"
+    fill="url(#innerHighlight)"
+  />
+
+  <!-- Friendly cute face / binary pulse inside the gate -->
+  <circle cx="216" cy="242" r="11" fill="#FFFDF8" />
+  <circle cx="272" cy="242" r="11" fill="#FFFDF8" />
+  <path d="M226 276 Q244 294 262 276" stroke="#FFFDF8" stroke-width="10" stroke-linecap="round" fill="none" />
+  <circle cx="198" cy="262" r="8" fill="#FDA4AF" opacity="0.85" />
+  <circle cx="290" cy="262" r="8" fill="#FDA4AF" opacity="0.85" />
+</svg>

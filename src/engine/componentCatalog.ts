@@ -1,6 +1,10 @@
 import type {
+  CircuitNode,
   ComponentMeta,
   ComponentType,
+  CustomICDefinition,
+  CustomICPin,
+  LogicValue,
   MsiSubcategory,
   PinDefinition,
 } from '../types/simulator';
@@ -638,6 +642,16 @@ export const COMPONENT_CATALOG: Record<ComponentType, ComponentMeta> = {
       { id: 'qn', name: "Q'", direction: 'out', relX: 114, relY: 58 },
     ],
   },
+  CUSTOM_IC: {
+    type: 'CUSTOM_IC',
+    label: 'Özel IC',
+    shortLabel: 'IC',
+    category: 'MSI Bloklar',
+    description: 'Kullanıcı tarafından paketlenmiş yeniden kullanılabilir alt devre bloğu.',
+    width: 124,
+    height: 66,
+    pins: [],
+  },
 };
 
 export const COMPONENT_CATEGORIES = [
@@ -684,3 +698,130 @@ export function createDefaultNode(
     locked,
   };
 }
+
+export function buildCustomICMeta(config: {
+  name: string;
+  inputPins: CustomICPin[];
+  outputPins: CustomICPin[];
+}): ComponentMeta {
+  const width = 124;
+  const maxPins = Math.max(1, config.inputPins.length, config.outputPins.length);
+  const height = maxPins * 24 + 42;
+  const topPad = 28;
+  const step = 24;
+
+  const leftCount = Math.max(1, config.inputPins.length);
+  const rightCount = Math.max(1, config.outputPins.length);
+  const leftStartY = topPad + (height - topPad - (leftCount - 1) * step) / 2;
+  const rightStartY = topPad + (height - topPad - (rightCount - 1) * step) / 2;
+
+  const pins: PinDefinition[] = [
+    ...config.inputPins.map((p, idx) => ({
+      id: p.id,
+      name: p.name,
+      direction: 'in' as const,
+      relX: 0,
+      relY: Math.round(leftStartY + idx * step),
+      role: 'data' as const,
+    })),
+    ...config.outputPins.map((p, idx) => ({
+      id: p.id,
+      name: p.name,
+      direction: 'out' as const,
+      relX: width,
+      relY: Math.round(rightStartY + idx * step),
+      role: 'data' as const,
+    })),
+  ];
+
+  return {
+    type: 'CUSTOM_IC',
+    label: config.name,
+    shortLabel: config.name.slice(0, 10) || 'IC',
+    category: 'MSI Bloklar',
+    description: `${config.name} (${config.inputPins.length} IN · ${config.outputPins.length} OUT)`,
+    width,
+    height,
+    pins,
+  };
+}
+
+export function getNodeMeta(
+  node: CircuitNode,
+  customICs: CustomICDefinition[] = []
+): ComponentMeta {
+  if (node.type !== 'CUSTOM_IC') {
+    return COMPONENT_CATALOG[node.type];
+  }
+  const found = node.customIcId
+    ? customICs.find((ic) => ic.id === node.customIcId)
+    : undefined;
+  return buildCustomICMeta({
+    name: found?.name ?? node.label,
+    inputPins: found?.inputPins ?? node.customInputPins ?? [],
+    outputPins: found?.outputPins ?? node.customOutputPins ?? [],
+  });
+}
+
+export function resetSubcircuitNodes(nodes: CircuitNode[]): CircuitNode[] {
+  return nodes.map((n) => {
+    const isFF = n.type === 'DFF' || n.type === 'JKFF' || n.type === 'TFF';
+    const isInput = n.type === 'SWITCH' || n.type === 'BUTTON' || n.type === 'CLOCK';
+    return {
+      ...n,
+      locked: false,
+      inputs: { ...n.inputs },
+      outputs: {
+        ...n.outputs,
+        ...(isInput ? { out: 0 as LogicValue } : {}),
+        ...(isFF ? { q: 0 as LogicValue, qn: 1 as LogicValue } : {}),
+      },
+      internal: {
+        ...n.internal,
+        ...(isFF ? { q: 0 as LogicValue, prevClk: 0 as LogicValue } : {}),
+        ...(n.internal.subcircuitNodes
+          ? { subcircuitNodes: resetSubcircuitNodes(n.internal.subcircuitNodes) }
+          : {}),
+        ...(n.internal.subcircuitWires
+          ? { subcircuitWires: n.internal.subcircuitWires.map((w) => ({ ...w })) }
+          : {}),
+      },
+    };
+  });
+}
+
+export function createCustomICNode(
+  ic: CustomICDefinition,
+  id: string,
+  x: number,
+  y: number
+): CircuitNode {
+  const inputs: Record<string, LogicValue> = {};
+  const outputs: Record<string, LogicValue> = {};
+  ic.inputPins.forEach((p) => {
+    inputs[p.id] = 0;
+  });
+  ic.outputPins.forEach((p) => {
+    outputs[p.id] = 0;
+  });
+
+  return {
+    id,
+    type: 'CUSTOM_IC',
+    label: ic.name,
+    x,
+    y,
+    inputs,
+    outputs,
+    customIcId: ic.id,
+    customIcColor: ic.color,
+    customInputPins: ic.inputPins.map((p) => ({ ...p })),
+    customOutputPins: ic.outputPins.map((p) => ({ ...p })),
+    internal: {
+      subcircuitNodes: resetSubcircuitNodes(ic.internalNodes),
+      subcircuitWires: ic.internalWires.map((w) => ({ ...w })),
+    },
+    locked: false,
+  };
+}
+

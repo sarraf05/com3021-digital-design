@@ -1,0 +1,39 @@
+{
+  "id": "/",
+  "name": "COM 3021 - Digital Design I",
+  "short_name": "COM 3021",
+  "description": "Interactive Digital Logic Design simulator, 5 visual tools, and 14-week study studio — 100% offline capable.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#FFFDF8",
+  "theme_color": "#FF6B8B",
+  "categories": ["education", "utilities"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -50,7 +50,26 @@ export type ComponentType =
   | 'PRIORITY_ENCODER_4TO2'
   | 'DFF'
   | 'JKFF'
-  | 'TFF';
+  | 'TFF'
+  | 'CUSTOM_IC';
+
+export type CustomICColor = 'mint' | 'sky' | 'coral' | 'violet' | 'amber';
+
+export interface CustomICPin {
+  id: string;
+  name: string;
+  nodeId: string;
+}
+
+export interface CustomICDefinition {
+  id: string;
+  name: string;
+  color: CustomICColor;
+  inputPins: CustomICPin[];
+  outputPins: CustomICPin[];
+  internalNodes: CircuitNode[];
+  internalWires: CircuitWire[];
+}
 
 export interface PinDefinition {
   id: string;
@@ -83,11 +102,18 @@ export interface CircuitNode {
   outputs: Record<string, LogicValue>;
   /** Evaluated input pin values for visual feedback */
   inputs: Record<string, LogicValue>;
-  /** Internal state for sequential elements (q, prevClk) or clock config */
+  /** Custom IC identity & pin layout snapshot */
+  customIcId?: string;
+  customIcColor?: CustomICColor;
+  customInputPins?: CustomICPin[];
+  customOutputPins?: CustomICPin[];
+  /** Internal state for sequential elements (q, prevClk), clock config, or isolated subcircuit state */
   internal: {
     q?: LogicValue;
     prevClk?: LogicValue;
     clockHz?: number;
+    subcircuitNodes?: CircuitNode[];
+    subcircuitWires?: CircuitWire[];
   };
   locked?: boolean;
 }

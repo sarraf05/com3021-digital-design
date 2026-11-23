@@ -1,4 +1,6 @@
 import { createDefaultNode } from './componentCatalog';
+import { UI_STRINGS } from '../i18n/translations';
+import type { Language } from '../types/curriculum';
 import type { CircuitNode, CircuitWire } from '../types/simulator';
 
 export interface CircuitPreset {
@@ -9,7 +11,8 @@ export interface CircuitPreset {
   wires: CircuitWire[];
 }
 
-export function getCircuitPresets(): CircuitPreset[] {
+export function getCircuitPresets(lang: Language = 'tr'): CircuitPreset[] {
+  const presetCopy = UI_STRINGS[lang].simulator.presets;
   // Preset 1: Half Adder from XOR + AND
   const swA = createDefaultNode('SWITCH', 'n_a', 80, 90, 'A');
   const swB = createDefaultNode('SWITCH', 'n_b', 80, 190, 'B');
@@ -68,29 +71,29 @@ export function getCircuitPresets(): CircuitPreset[] {
   return [
     {
       id: 'half-adder',
-      name: 'Half Adder (XOR + AND)',
-      description: 'Temel kapılarla kurulmuş 1-bit yarım toplayıcı devresi.',
+      name: presetCopy['half-adder'].name,
+      description: presetCopy['half-adder'].description,
       nodes: [swA, swB, xorGate, andGate, ledS, ledC],
       wires: haWires,
     },
     {
       id: 'nand-mux',
-      name: '2x1 MUX (NAND Yapısı)',
-      description: 'Sadece NAND ve NOT kapılarıyla 2-to-1 Multiplexer devresi.',
+      name: presetCopy['nand-mux'].name,
+      description: presetCopy['nand-mux'].description,
       nodes: [mI0, mS, mI1, mNot, mNand1, mNand2, mNand3, mLed],
       wires: muxWires,
     },
     {
       id: 'tff-counter',
-      name: '2-Bit Sayaç (T-FF + 7-Seg)',
-      description: 'Clock ile tetiklenen T Flip-Flop sayıcı ve 7-Segment gösterge.',
+      name: presetCopy['tff-counter'].name,
+      description: presetCopy['tff-counter'].description,
       nodes: [clk, swT, tff0, tff1, seg],
       wires: cntWires,
     },
     {
       id: 'empty',
-      name: 'Boş Çalışma Tuvali',
-      description: 'Sıfırdan kendi dijital devrenizi tasarlayın.',
+      name: presetCopy.empty.name,
+      description: presetCopy.empty.description,
       nodes: [],
       wires: [],
     },

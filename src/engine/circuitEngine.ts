@@ -1,7 +1,9 @@
+import type { Language } from '../types/curriculum';
 import type {
   CircuitChallengeConfig,
   CircuitNode,
   CircuitWire,
+  CustomICDefinition,
   LogicValue,
   VerificationResult,
   VerificationRowResult,
@@ -197,23 +199,99 @@ function evaluateCombinationalNode(node: CircuitNode): Record<string, LogicValue
       const q = node.internal.q ?? 0;
       return { q, qn: inv(q) };
     }
+    case 'CUSTOM_IC':
+      return { ...node.outputs };
   }
 }
 
+export function cloneNodesDeep(nodes: CircuitNode[]): CircuitNode[] {
+  return nodes.map((n) => ({
+    ...n,
+    inputs: { ...n.inputs },
+    outputs: { ...n.outputs },
+    customInputPins: n.customInputPins ? n.customInputPins.map((p) => ({ ...p })) : undefined,
+    customOutputPins: n.customOutputPins ? n.customOutputPins.map((p) => ({ ...p })) : undefined,
+    internal: {
+      ...n.internal,
+      subcircuitNodes: n.internal.subcircuitNodes
+        ? cloneNodesDeep(n.internal.subcircuitNodes)
+        : undefined,
+      subcircuitWires: n.internal.subcircuitWires
+        ? n.internal.subcircuitWires.map((w) => ({ ...w }))
+        : undefined,
+    },
+  }));
+}
+
+function evaluateCustomICNode(
+  node: CircuitNode,
+  triggerSequential: boolean,
+  customICs: CustomICDefinition[]
+): Record<string, LogicValue> {
+  const blueprint = node.customIcId
+    ? customICs.find((ic) => ic.id === node.customIcId)
+    : undefined;
+
+  const inputPins = node.customInputPins ?? blueprint?.inputPins ?? [];
+  const outputPins = node.customOutputPins ?? blueprint?.outputPins ?? [];
+  const rawSubNodes = node.internal.subcircuitNodes ?? blueprint?.internalNodes ?? [];
+  const rawSubWires = node.internal.subcircuitWires ?? blueprint?.internalWires ?? [];
+
+  if (rawSubNodes.length === 0) {
+    return { ...node.outputs };
+  }
+
+  const inputValueByNodeId = new Map<string, LogicValue>();
+  for (const pin of inputPins) {
+    inputValueByNodeId.set(pin.nodeId, node.inputs[pin.id] ?? 0);
+  }
+
+  const mappedSubNodes = cloneNodesDeep(rawSubNodes).map((sub) => {
+    if (inputValueByNodeId.has(sub.id)) {
+      return {
+        ...sub,
+        outputs: {
+          ...sub.outputs,
+          out: inputValueByNodeId.get(sub.id) ?? 0,
+        },
+      };
+    }
+    return sub;
+  });
+
+  const evaluatedSub = evaluateCircuit(
+    mappedSubNodes,
+    rawSubWires,
+    triggerSequential,
+    customICs
+  );
+  node.internal.subcircuitNodes = evaluatedSub;
+  if (!node.internal.subcircuitWires && blueprint) {
+    node.internal.subcircuitWires = blueprint.internalWires.map((w) => ({ ...w }));
+  }
+
+  const subById = new Map<string, CircuitNode>();
+  evaluatedSub.forEach((sn) => subById.set(sn.id, sn));
+
+  const nextOutputs: Record<string, LogicValue> = {};
+  for (const outPin of outputPins) {
+    const ledNode = subById.get(outPin.nodeId);
+    nextOutputs[outPin.id] = ledNode?.inputs.in ?? 0;
+  }
+  return nextOutputs;
+}
+
 /**
- * Propagates combinational signals and optionally triggers positive-edge Flip-Flops.
+ * Propagates combinational signals and optionally triggers positive-edge Flip-Flops
+ * (including isolated hierarchical CUSTOM_IC subcircuits).
  */
 export function evaluateCircuit(
   nodes: CircuitNode[],
   wires: CircuitWire[],
-  triggerSequential = true
+  triggerSequential = true,
+  customICs: CustomICDefinition[] = []
 ): CircuitNode[] {
-  const working: CircuitNode[] = nodes.map((n) => ({
-    ...n,
-    inputs: { ...n.inputs },
-    outputs: { ...n.outputs },
-    internal: { ...n.internal },
-  }));
+  const working: CircuitNode[] = cloneNodesDeep(nodes);
 
   const nodeMap = new Map<string, CircuitNode>();
   working.forEach((n) => nodeMap.set(n.id, n));
@@ -245,9 +323,12 @@ export function evaluateCircuit(
         dst.inputs[wire.toPinId] = val;
       }
 
-      // Evaluate combinational outputs
+      // Evaluate combinational outputs (and combinational pass of Custom ICs)
       for (const n of working) {
-        const nextOut = evaluateCombinationalNode(n);
+        const nextOut =
+          n.type === 'CUSTOM_IC'
+            ? evaluateCustomICNode(n, false, customICs)
+            : evaluateCombinationalNode(n);
         for (const [k, v] of Object.entries(nextOut)) {
           if (n.outputs[k] !== v) {
             n.outputs[k] = v;
@@ -293,6 +374,14 @@ export function evaluateCircuit(
           n.outputs.qn = inv(nextQ);
         }
         n.internal.prevClk = currClk;
+      } else if (n.type === 'CUSTOM_IC') {
+        const nextOut = evaluateCustomICNode(n, true, customICs);
+        for (const [k, v] of Object.entries(nextOut)) {
+          if (n.outputs[k] !== v) {
+            n.outputs[k] = v;
+            seqChanged = true;
+          }
+        }
       }
     }
 
@@ -311,7 +400,9 @@ export function evaluateCircuit(
 export function verifyCircuitAgainstTruthTable(
   nodes: CircuitNode[],
   wires: CircuitWire[],
-  challenge: CircuitChallengeConfig
+  challenge: CircuitChallengeConfig,
+  lang: Language = 'tr',
+  customICs: CustomICDefinition[] = []
 ): VerificationResult {
   const inputNodeMap = new Map<string, CircuitNode>();
   const outputNodeMap = new Map<string, CircuitNode>();
@@ -326,7 +417,10 @@ export function verifyCircuitAgainstTruthTable(
       return {
         passed: false,
         rows: [],
-        error: `"${label}" etiketli bir Toggle Switch girişi bulunamadı. Lütfen giriş anahtarının etiketini "${label}" olarak koruyun.`,
+        error:
+          lang === 'en'
+            ? `Toggle Switch input labeled "${label}" not found. Please keep the input switch label as "${label}".`
+            : `"${label}" etiketli bir Toggle Switch girişi bulunamadı. Lütfen giriş anahtarının etiketini "${label}" olarak koruyun.`,
       };
     }
     inputNodeMap.set(label, found);
@@ -342,7 +436,10 @@ export function verifyCircuitAgainstTruthTable(
       return {
         passed: false,
         rows: [],
-        error: `"${outLabel}" etiketli bir LED çıkışı bulunamadı. Lütfen çıkış LED'inin etiketini "${outLabel}" olarak koruyun.`,
+        error:
+          lang === 'en'
+            ? `LED output labeled "${outLabel}" not found. Please keep the output LED label as "${outLabel}".`
+            : `"${outLabel}" etiketli bir LED çıkışı bulunamadı. Lütfen çıkış LED'inin etiketini "${outLabel}" olarak koruyun.`,
       };
     }
     // Check if LED has an incoming wire
@@ -351,7 +448,10 @@ export function verifyCircuitAgainstTruthTable(
       return {
         passed: false,
         rows: [],
-        error: `"${outLabel}" çıkış LED'ine henüz hiçbir kablo bağlanmamış.`,
+        error:
+          lang === 'en'
+            ? `No wire connected to output LED "${outLabel}" yet.`
+            : `"${outLabel}" çıkış LED'ine henüz hiçbir kablo bağlanmamış.`,
       };
     }
     outputNodeMap.set(outLabel, found);
@@ -365,7 +465,10 @@ export function verifyCircuitAgainstTruthTable(
         return {
           passed: false,
           rows: [],
-          error: `Bu görevde en fazla ${maxAllowed} adet ${compType} kapısı kullanabilirsiniz (şu an ${count} adet yerleştirilmiş). İfadeyi önce cebirsel olarak sadeleştirin.`,
+          error:
+            lang === 'en'
+              ? `This task allows at most ${maxAllowed} ${compType} gate(s) (currently ${count} placed). Simplify the expression algebraically first.`
+              : `Bu görevde en fazla ${maxAllowed} adet ${compType} kapısı kullanabilirsiniz (şu an ${count} adet yerleştirilmiş). İfadeyi önce cebirsel olarak sadeleştirin.`,
         };
       }
     }
@@ -382,14 +485,16 @@ export function verifyCircuitAgainstTruthTable(
       return {
         passed: false,
         rows: [],
-        error: `"${seq.clkLabel}" etiketli Clock girişi bulunamadı.`,
+        error:
+          lang === 'en'
+            ? `Clock input labeled "${seq.clkLabel}" not found.`
+            : `"${seq.clkLabel}" etiketli Clock girişi bulunamadı.`,
       };
     }
 
     // Initialize cloned nodes with all Flip-Flops reset to Q = 0, prevClk = 0
-    let stateNodes: CircuitNode[] = nodes.map((n) => ({
+    let stateNodes: CircuitNode[] = cloneNodesDeep(nodes).map((n) => ({
       ...n,
-      inputs: { ...n.inputs },
       outputs: {
         ...n.outputs,
         ...(n.type === 'DFF' || n.type === 'JKFF' || n.type === 'TFF'
@@ -421,13 +526,13 @@ export function verifyCircuitAgainstTruthTable(
         }
         return { ...n, outputs: nextOut };
       });
-      stateNodes = evaluateCircuit(stateNodes, wires, true);
+      stateNodes = evaluateCircuit(stateNodes, wires, true, customICs);
 
       // 2. Trigger rising edge CLK = 1
       stateNodes = stateNodes.map((n) =>
         n.id === clkNode.id ? { ...n, outputs: { ...n.outputs, out: 1 as LogicValue } } : n
       );
-      stateNodes = evaluateCircuit(stateNodes, wires, true);
+      stateNodes = evaluateCircuit(stateNodes, wires, true, customICs);
 
       // 3. Read outputs after rising edge
       const actualOutputs: Record<string, LogicValue | null> = {};
@@ -447,7 +552,7 @@ export function verifyCircuitAgainstTruthTable(
       stateNodes = stateNodes.map((n) =>
         n.id === clkNode.id ? { ...n, outputs: { ...n.outputs, out: 0 as LogicValue } } : n
       );
-      stateNodes = evaluateCircuit(stateNodes, wires, true);
+      stateNodes = evaluateCircuit(stateNodes, wires, true, customICs);
 
       seqResults.push({
         inputs: { ...step.inputs, [seq.clkLabel]: 1 },
@@ -468,13 +573,7 @@ export function verifyCircuitAgainstTruthTable(
 
   for (const expectedRow of challenge.expectedTruthTable) {
     // Clone nodes for deterministic test run
-    const testNodes = nodes.map((n) => {
-      const cloned: CircuitNode = {
-        ...n,
-        inputs: { ...n.inputs },
-        outputs: { ...n.outputs },
-        internal: { ...n.internal },
-      };
+    const testNodes = cloneNodesDeep(nodes).map((cloned) => {
       for (const [inLabel, inNode] of inputNodeMap.entries()) {
         if (cloned.id === inNode.id) {
           cloned.outputs.out = expectedRow.inputs[inLabel] ?? 0;
@@ -483,7 +582,7 @@ export function verifyCircuitAgainstTruthTable(
       return cloned;
     });
 
-    const evaluated = evaluateCircuit(testNodes, wires, false);
+    const evaluated = evaluateCircuit(testNodes, wires, false, customICs);
     const actualOutputs: Record<string, LogicValue | null> = {};
     let rowMatch = true;
 

@@ -1,6 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Dices, Grid3X3, RotateCcw, Sparkles } from 'lucide-react';
 import type { WidgetConfig } from '../../types/curriculum';
+import { useSession } from '../../context/SessionContext';
+import { UI_STRINGS } from '../../i18n/translations';
 
 interface KMapStudioProps {
   config?: WidgetConfig;
@@ -273,7 +275,13 @@ function getGroupSegments(
 }
 
 export const KMapStudio: React.FC<KMapStudioProps> = ({ config, studioMode = false }) => {
-  const [varCount, setVarCount] = useState<2 | 3 | 4>(config?.variables ?? 4);
+  const { session, updateToolsState } = useSession();
+  const km = UI_STRINGS[session.language].kmap;
+  const savedKmapRef = useRef(studioMode ? session.tools.kmap : undefined);
+
+  const [varCount, setVarCount] = useState<2 | 3 | 4>(
+    savedKmapRef.current?.varCount ?? config?.variables ?? 4
+  );
   const [isMobile, setIsMobile] = useState<boolean>(() =>
     typeof window !== 'undefined' ? window.innerWidth < 768 : false
   );
@@ -285,6 +293,9 @@ export const KMapStudio: React.FC<KMapStudioProps> = ({ config, studioMode = fal
   }, []);
 
   const [cells, setCells] = useState<CellValue[]>(() => {
+    if (savedKmapRef.current && Array.isArray(savedKmapRef.current.cells) && savedKmapRef.current.cells.length === 16) {
+      return savedKmapRef.current.cells;
+    }
     const arr: CellValue[] = new Array(16).fill(0);
     const defaults = config?.initialMinterms ?? [0, 2, 5, 7, 8, 10, 13, 15];
     defaults.forEach((m) => {
@@ -292,6 +303,16 @@ export const KMapStudio: React.FC<KMapStudioProps> = ({ config, studioMode = fal
     });
     return arr;
   });
+
+  const skipFirstSyncRef = useRef(true);
+  useEffect(() => {
+    if (!studioMode) return;
+    if (skipFirstSyncRef.current) {
+      skipFirstSyncRef.current = false;
+      return;
+    }
+    updateToolsState('kmap', { varCount, cells });
+  }, [studioMode, varCount, cells, updateToolsState]);
 
   const layout = useMemo(() => getKMapLayout(varCount), [varCount]);
   const groups = useMemo(() => solveKMap(cells, varCount, 1), [cells, varCount]);
@@ -389,10 +410,10 @@ export const KMapStudio: React.FC<KMapStudioProps> = ({ config, studioMode = fal
           </span>
           <div className="min-w-0">
             <h4 className="font-display font-extrabold text-sm sm:text-base text-slate-800 leading-tight">
-              KMapStudio
+              {km.title}
             </h4>
             <p className="text-[11px] font-medium text-slate-500 truncate">
-              Hücrelere dokunun: 0 → 1 → X (don&apos;t care)
+              {km.subtitle}
             </p>
           </div>
         </div>
@@ -410,7 +431,7 @@ export const KMapStudio: React.FC<KMapStudioProps> = ({ config, studioMode = fal
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                {cnt} Değişken
+                {cnt} {km.variablesSuffix}
               </button>
             ))}
           </div>
@@ -421,7 +442,7 @@ export const KMapStudio: React.FC<KMapStudioProps> = ({ config, studioMode = fal
             className="min-h-[40px] md:min-h-0 flex items-center gap-1 px-2.5 py-1.5 rounded-2xl border-2 border-sky-200 border-b-4 bg-sky-50 hover:bg-sky-100 active:border-b-2 text-xs font-bold text-sky-800 transition-all cursor-pointer whitespace-nowrap"
           >
             <Dices className="w-3.5 h-3.5 text-sky-600" />
-            <span>Rastgele</span>
+            <span>{km.random}</span>
           </button>
 
           <button
@@ -429,7 +450,7 @@ export const KMapStudio: React.FC<KMapStudioProps> = ({ config, studioMode = fal
             onClick={setAllOnes}
             className="min-h-[40px] md:min-h-0 px-2.5 py-1.5 rounded-2xl border-2 border-emerald-200 border-b-4 bg-emerald-50 hover:bg-emerald-100 active:border-b-2 text-xs font-bold text-emerald-800 transition-all cursor-pointer whitespace-nowrap"
           >
-            Tümünü 1 Yap
+            {km.setAllOnes}
           </button>
 
           <button
@@ -438,7 +459,7 @@ export const KMapStudio: React.FC<KMapStudioProps> = ({ config, studioMode = fal
             className="min-h-[40px] md:min-h-0 flex items-center gap-1 px-2.5 py-1.5 rounded-2xl border-2 border-rose-200 border-b-4 bg-rose-50 hover:bg-rose-100 active:border-b-2 text-xs font-bold text-rose-700 transition-all cursor-pointer whitespace-nowrap"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>Temizle</span>
+            <span>{km.clear}</span>
           </button>
         </div>
       </div>
@@ -605,7 +626,7 @@ export const KMapStudio: React.FC<KMapStudioProps> = ({ config, studioMode = fal
             <div className="flex items-center justify-between gap-2">
               <span className="inline-flex items-center gap-1.5 text-[11px] font-display font-extrabold tracking-wide text-emerald-700">
                 <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
-                MİNİMİZED SOP
+                {km.minimizedSop}
               </span>
               <span className="font-mono text-[11px] font-bold text-emerald-700">
                 F({layout.vars.join(', ')})
@@ -630,7 +651,7 @@ export const KMapStudio: React.FC<KMapStudioProps> = ({ config, studioMode = fal
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <div className="bg-sky-50/60 border-2 border-sky-200 rounded-2xl p-3 space-y-1">
               <div className="text-[11px] font-display font-extrabold tracking-wide text-sky-700">
-                MİNİMİZED POS
+                {km.minimizedPos}
               </div>
               <div className="font-mono text-xs sm:text-sm font-extrabold text-sky-700 break-words leading-snug">
                 F = {posExpression}
@@ -639,7 +660,7 @@ export const KMapStudio: React.FC<KMapStudioProps> = ({ config, studioMode = fal
 
             <div className="bg-violet-50/60 border-2 border-violet-200 rounded-2xl p-3 space-y-1">
               <div className="text-[11px] font-display font-extrabold tracking-wide text-violet-700">
-                NAND-ONLY
+                {km.nandOnly}
               </div>
               <div className="font-mono text-xs sm:text-sm font-extrabold text-violet-700 break-words leading-snug">
                 F = {nandExpression}
@@ -670,7 +691,7 @@ export const KMapStudio: React.FC<KMapStudioProps> = ({ config, studioMode = fal
           <div className="flex flex-col gap-1 px-1 max-h-[112px] overflow-y-auto pastel-scrollbar">
             {groups.length === 0 ? (
               <div className="text-xs font-medium text-slate-400 py-1">
-                Grup oluşturmak için K-Map hücrelerinden birini 1 yapın.
+                {km.emptyHint}
               </div>
             ) : (
               groups.map((g, idx) => (
@@ -684,7 +705,7 @@ export const KMapStudio: React.FC<KMapStudioProps> = ({ config, studioMode = fal
                       className="w-2.5 h-2.5 rounded-full shrink-0"
                     />
                     <span className="font-bold text-slate-700 truncate">
-                      Grup {idx + 1} · {g.size} hücre: m({g.cells.join(',')})
+                      {km.groupLabel(idx, g.size)}: m({g.cells.join(',')})
                     </span>
                   </div>
                   <span style={{ color: g.color }} className="font-extrabold shrink-0">

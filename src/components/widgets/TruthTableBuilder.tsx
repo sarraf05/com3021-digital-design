@@ -1,6 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { RotateCcw, Sparkles, Table2 } from 'lucide-react';
 import type { WidgetConfig } from '../../types/curriculum';
+import { useSession } from '../../context/SessionContext';
+import { UI_STRINGS } from '../../i18n/translations';
 
 interface TruthTableBuilderProps {
   config?: WidgetConfig;
@@ -13,10 +15,19 @@ export const TruthTableBuilder: React.FC<TruthTableBuilderProps> = ({
   config,
   studioMode = false,
 }) => {
-  const [varCount, setVarCount] = useState<2 | 3 | 4>(config?.variables ?? 3);
+  const { session, updateToolsState } = useSession();
+  const tt = UI_STRINGS[session.language].truthTable;
+  const savedTruthRef = useRef(studioMode ? session.tools.truthTable : undefined);
+
+  const [varCount, setVarCount] = useState<2 | 3 | 4>(
+    savedTruthRef.current?.varCount ?? config?.variables ?? 3
+  );
   const rowCount = 1 << varCount;
 
   const [outputs, setOutputs] = useState<(0 | 1)[]>(() => {
+    if (savedTruthRef.current && Array.isArray(savedTruthRef.current.outputs) && savedTruthRef.current.outputs.length === 16) {
+      return savedTruthRef.current.outputs;
+    }
     const arr = new Array<0 | 1>(16).fill(0);
     const init = config?.initialMinterms ?? [1, 3, 5, 6];
     init.forEach((m) => {
@@ -24,7 +35,19 @@ export const TruthTableBuilder: React.FC<TruthTableBuilderProps> = ({
     });
     return arr;
   });
-  const [selectedRow, setSelectedRow] = useState<number>(1);
+  const [selectedRow, setSelectedRow] = useState<number>(
+    savedTruthRef.current?.selectedRow ?? 1
+  );
+
+  const skipFirstSyncRef = useRef(true);
+  useEffect(() => {
+    if (!studioMode) return;
+    if (skipFirstSyncRef.current) {
+      skipFirstSyncRef.current = false;
+      return;
+    }
+    updateToolsState('truthTable', { varCount, outputs, selectedRow });
+  }, [studioMode, varCount, outputs, selectedRow, updateToolsState]);
 
   const vars = VAR_NAMES.slice(0, varCount);
 
@@ -99,7 +122,7 @@ export const TruthTableBuilder: React.FC<TruthTableBuilderProps> = ({
               </th>
             ))}
             <th className="py-1.5 px-2 text-center text-sky-700 font-extrabold">F</th>
-            <th className="py-1.5 px-2 text-left font-bold">Terim</th>
+            <th className="py-1.5 px-2 text-left font-bold">{tt.termCol}</th>
           </tr>
         </thead>
         <tbody>
@@ -187,10 +210,10 @@ export const TruthTableBuilder: React.FC<TruthTableBuilderProps> = ({
           </span>
           <div className="min-w-0">
             <h4 className="font-display font-extrabold text-sm sm:text-base text-slate-800 leading-tight">
-              Truth Table &amp; SOP/POS Üretici
+              {tt.title}
             </h4>
             <p className="text-[11px] font-medium text-slate-500 truncate">
-              Çıkış (F) butonlarına dokunun: Minterm (1) ve Maxterm (0) canlı güncellenir
+              {tt.subtitle}
             </p>
           </div>
         </div>
@@ -211,7 +234,7 @@ export const TruthTableBuilder: React.FC<TruthTableBuilderProps> = ({
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                {cnt} Değişken
+                {cnt} {tt.variablesSuffix}
               </button>
             ))}
           </div>
@@ -235,7 +258,7 @@ export const TruthTableBuilder: React.FC<TruthTableBuilderProps> = ({
             onClick={() => applyPreset('majority')}
             className="min-h-[40px] md:min-h-0 px-2.5 py-1.5 rounded-2xl border-2 border-emerald-200 border-b-4 bg-emerald-50 hover:bg-emerald-100 active:border-b-2 text-xs font-bold text-emerald-800 cursor-pointer whitespace-nowrap"
           >
-            Çoğunluk
+            {tt.majority}
           </button>
           <button
             type="button"
@@ -243,7 +266,7 @@ export const TruthTableBuilder: React.FC<TruthTableBuilderProps> = ({
             className="min-h-[40px] md:min-h-0 flex items-center gap-1 px-2.5 py-1.5 rounded-2xl border-2 border-rose-200 border-b-4 bg-rose-50 hover:bg-rose-100 active:border-b-2 text-xs font-bold text-rose-700 cursor-pointer whitespace-nowrap"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>Temizle</span>
+            <span>{tt.clear}</span>
           </button>
         </div>
       </div>
@@ -269,7 +292,7 @@ export const TruthTableBuilder: React.FC<TruthTableBuilderProps> = ({
             <div className="flex items-center justify-between gap-2">
               <span className="inline-flex items-center gap-1.5 text-[11px] font-display font-extrabold tracking-wide text-emerald-700">
                 <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
-                CANONICAL SOP (Σm)
+                {tt.canonicalSop}
               </span>
               <span className="font-mono text-[11px] font-bold text-emerald-800">
                 Σm({expressions.minterms.join(', ') || '∅'})
@@ -302,7 +325,7 @@ export const TruthTableBuilder: React.FC<TruthTableBuilderProps> = ({
           <div className="bg-sky-50/60 border-2 border-sky-200 rounded-2xl p-3.5 space-y-1.5">
             <div className="flex items-center justify-between gap-2">
               <span className="text-[11px] font-display font-extrabold tracking-wide text-sky-700">
-                CANONICAL POS (ΠM)
+                {tt.canonicalPos}
               </span>
               <span className="font-mono text-[11px] font-bold text-sky-800">
                 ΠM({expressions.maxterms.join(', ') || '∅'})
@@ -334,15 +357,15 @@ export const TruthTableBuilder: React.FC<TruthTableBuilderProps> = ({
           {/* Active Row Inspector Card */}
           <div className="bg-amber-50/60 border-2 border-amber-200 rounded-2xl px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
             <div className="font-mono font-bold text-amber-950">
-              Seçili Satır #{safeRow}:{' '}
+              {tt.selectedRowPrefix} #{safeRow}:{' '}
               <span className="text-slate-700">
                 {vars.map((v, i) => `${v}=${selectedBits[i]}`).join(', ')}
               </span>{' '}
               →{' '}
               <span className={selectedVal === 1 ? 'text-emerald-700' : 'text-sky-700'}>
                 {selectedVal === 1
-                  ? `m${safeRow} (Minterm aktif)`
-                  : `M${safeRow} (Maxterm aktif)`}
+                  ? `m${safeRow} (${tt.mintermActive})`
+                  : `M${safeRow} (${tt.maxtermActive})`}
               </span>
             </div>
             <button
@@ -350,7 +373,7 @@ export const TruthTableBuilder: React.FC<TruthTableBuilderProps> = ({
               onClick={() => toggleOutput(safeRow)}
               className="min-h-[40px] md:min-h-0 px-3 py-1 rounded-xl border-2 border-amber-300 bg-white hover:bg-amber-100 text-amber-900 font-bold cursor-pointer"
             >
-              Çıkışı Çevir ({selectedVal} → {selectedVal === 1 ? 0 : 1})
+              {tt.flipOutput} ({selectedVal} → {selectedVal === 1 ? 0 : 1})
             </button>
           </div>
         </div>

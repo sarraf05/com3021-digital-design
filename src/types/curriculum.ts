@@ -1,5 +1,8 @@
 import type { ComponentType } from './simulator';
 
+export type Language = 'tr' | 'en';
+export type LocalizedText = string | { tr: string; en: string };
+
 export type WidgetType =
   | 'BaseComplementVisualizer'
   | 'TruthTableBuilder'
@@ -18,24 +21,24 @@ export interface WidgetConfig {
 
 export interface VisualTableDiagram {
   kind: 'table';
-  caption: string;
-  headers: string[];
-  rows: string[][];
+  caption: LocalizedText;
+  headers: LocalizedText[];
+  rows: LocalizedText[][];
   highlightColumn?: number;
 }
 
 export interface PositionalBreakdownDiagram {
   kind: 'positional';
-  caption: string;
+  caption: LocalizedText;
   base: number;
-  digits: { symbol: string; weightLabel: string; contribution: string }[];
-  resultLabel: string;
+  digits: { symbol: string; weightLabel: LocalizedText; contribution: LocalizedText }[];
+  resultLabel: LocalizedText;
 }
 
 export interface StepFlowDiagram {
   kind: 'steps';
-  caption: string;
-  steps: { label: string; detail: string; badge?: string }[];
+  caption: LocalizedText;
+  steps: { label: LocalizedText; detail: LocalizedText; badge?: LocalizedText }[];
 }
 
 export type VisualDiagramData =
@@ -45,43 +48,43 @@ export type VisualDiagramData =
 
 export interface VisualSection {
   id: string;
-  title: string;
-  explanation: string;
-  keyPoints?: string[];
+  title: LocalizedText;
+  explanation: LocalizedText;
+  keyPoints?: LocalizedText[];
   diagram?: VisualDiagramData;
   diagrams?: VisualDiagramData[];
   widget?: WidgetType;
   widgetConfig?: WidgetConfig;
-  examTip?: string;
+  examTip?: LocalizedText;
 }
 
 export interface MultipleChoiceQuestion {
   id: string;
   type: 'multiple-choice';
-  title: string;
+  title: LocalizedText;
   difficulty: 'Temel' | 'Orta' | 'Sınav Seviyesi';
-  prompt: string;
-  options: string[];
+  prompt: LocalizedText;
+  options: LocalizedText[];
   correctIndex: number;
-  solutionSteps: { title: string; detail: string }[];
+  solutionSteps: { title: LocalizedText; detail: LocalizedText }[];
 }
 
 export interface TableCellSpec {
-  value: string;
+  value: LocalizedText;
   editable?: boolean;
   expected?: string;
-  placeholder?: string;
+  placeholder?: LocalizedText;
 }
 
 export interface InteractiveTableQuestion {
   id: string;
   type: 'interactive-table';
-  title: string;
+  title: LocalizedText;
   difficulty: 'Temel' | 'Orta' | 'Sınav Seviyesi';
-  prompt: string;
-  headers: string[];
+  prompt: LocalizedText;
+  headers: LocalizedText[];
   rows: TableCellSpec[][];
-  solutionExplanation: string;
+  solutionExplanation: LocalizedText;
 }
 
 export interface TruthTableRowExpectation {
@@ -102,17 +105,17 @@ export interface SequentialTestConfig {
 export interface SimulatorBuildQuestion {
   id: string;
   type: 'simulator-build';
-  title: string;
+  title: LocalizedText;
   difficulty: 'Temel' | 'Orta' | 'Sınav Seviyesi';
-  prompt: string;
+  prompt: LocalizedText;
   inputs: string[];
   outputs: string[];
   allowedComponents: ComponentType[];
   maxComponents?: Partial<Record<ComponentType, number>>;
   expectedTruthTable: TruthTableRowExpectation[];
   sequentialTest?: SequentialTestConfig;
-  hint: string;
-  solutionDescription: string;
+  hint: LocalizedText;
+  solutionDescription: LocalizedText;
 }
 
 export type Question =
@@ -123,10 +126,10 @@ export type Question =
 export interface WeekModule {
   id: number;
   weekNumber: number;
-  englishTitle: string;
-  turkishSubtitle: string;
-  summary: string;
-  learningObjectives: string[];
+  englishTitle: LocalizedText;
+  turkishSubtitle: LocalizedText;
+  summary: LocalizedText;
+  learningObjectives: LocalizedText[];
   isPlaceholder: boolean;
   isExam?: boolean;
   recommendedWidget?: WidgetType;

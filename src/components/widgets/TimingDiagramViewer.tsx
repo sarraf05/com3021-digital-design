@@ -1,6 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Activity, RotateCcw } from 'lucide-react';
 import type { WidgetConfig } from '../../types/curriculum';
+import { useSession } from '../../context/SessionContext';
+import { UI_STRINGS } from '../../i18n/translations';
 
 interface TimingDiagramViewerProps {
   config?: WidgetConfig;
@@ -38,14 +40,60 @@ export const TimingDiagramViewer: React.FC<TimingDiagramViewerProps> = ({
   config,
   studioMode = false,
 }) => {
-  const [ffType, setFfType] = useState<'D' | 'JK' | 'T'>(config?.flipFlopType ?? 'D');
-  const [edgeType, setEdgeType] = useState<'rising' | 'falling'>('rising');
-  const [initialQ, setInitialQ] = useState<0 | 1>(0);
+  const { session, updateToolsState } = useSession();
+  const td = UI_STRINGS[session.language].timing;
+  const savedTimingRef = useRef(studioMode ? session.tools.timingDiagram : undefined);
 
-  const [dWave, setDWave] = useState<(0 | 1)[]>([0, 1, 1, 0, 1, 0, 0, 1]);
-  const [jWave, setJWave] = useState<(0 | 1)[]>([1, 0, 1, 0, 1, 1, 0, 1]);
-  const [kWave, setKWave] = useState<(0 | 1)[]>([0, 0, 1, 1, 0, 1, 0, 0]);
-  const [tWave, setTWave] = useState<(0 | 1)[]>([1, 1, 0, 1, 1, 0, 1, 1]);
+  const [ffType, setFfType] = useState<'D' | 'JK' | 'T'>(
+    savedTimingRef.current?.ffType ?? config?.flipFlopType ?? 'D'
+  );
+  const [edgeType, setEdgeType] = useState<'rising' | 'falling'>(
+    savedTimingRef.current?.edgeType ?? 'rising'
+  );
+  const [initialQ, setInitialQ] = useState<0 | 1>(
+    savedTimingRef.current?.initialQ ?? 0
+  );
+
+  const [dWave, setDWave] = useState<(0 | 1)[]>(
+    savedTimingRef.current?.dWave ?? [0, 1, 1, 0, 1, 0, 0, 1]
+  );
+  const [jWave, setJWave] = useState<(0 | 1)[]>(
+    savedTimingRef.current?.jWave ?? [1, 0, 1, 0, 1, 1, 0, 1]
+  );
+  const [kWave, setKWave] = useState<(0 | 1)[]>(
+    savedTimingRef.current?.kWave ?? [0, 0, 1, 1, 0, 1, 0, 0]
+  );
+  const [tWave, setTWave] = useState<(0 | 1)[]>(
+    savedTimingRef.current?.tWave ?? [1, 1, 0, 1, 1, 0, 1, 1]
+  );
+
+  const skipFirstSyncRef = useRef(true);
+  useEffect(() => {
+    if (!studioMode) return;
+    if (skipFirstSyncRef.current) {
+      skipFirstSyncRef.current = false;
+      return;
+    }
+    updateToolsState('timingDiagram', {
+      ffType,
+      edgeType,
+      initialQ,
+      dWave,
+      jWave,
+      kWave,
+      tWave,
+    });
+  }, [
+    studioMode,
+    ffType,
+    edgeType,
+    initialQ,
+    dWave,
+    jWave,
+    kWave,
+    tWave,
+    updateToolsState,
+  ]);
 
   const toggleCycle = (
     setter: React.Dispatch<React.SetStateAction<(0 | 1)[]>>,
@@ -130,16 +178,16 @@ export const TimingDiagramViewer: React.FC<TimingDiagramViewerProps> = ({
     ffType === 'D'
       ? {
           eq: 'Q(t+1) = D',
-          rule: 'Saat kenarında D=1 ise Set (Q=1), D=0 ise Reset (Q=0).',
+          rule: td.rules.D,
         }
       : ffType === 'T'
         ? {
             eq: "Q(t+1) = T ⊕ Q = TQ' + T'Q",
-            rule: 'T=0 iken durum korunur (Hold); T=1 iken durum terslenir (Toggle).',
+            rule: td.rules.T,
           }
         : {
             eq: "Q(t+1) = JQ' + K'Q",
-            rule: 'JK=00 Hold · JK=01 Reset · JK=10 Set · JK=11 Toggle.',
+            rule: td.rules.JK,
           };
 
   const qTopY = ffType === 'JK' ? 154 : 114;
@@ -161,10 +209,10 @@ export const TimingDiagramViewer: React.FC<TimingDiagramViewerProps> = ({
           </span>
           <div className="min-w-0">
             <h4 className="font-display font-extrabold text-sm sm:text-base text-slate-800 leading-tight">
-              Timing Diagram Viewer
+              {td.title}
             </h4>
             <p className="text-[11px] font-medium text-slate-500 truncate">
-              Saat çevrimi girişlerini değiştirin; Q ve Q&apos; dalga formlarını kenar tetiklemesiyle izleyin
+              {td.subtitle}
             </p>
           </div>
         </div>
@@ -192,7 +240,7 @@ export const TimingDiagramViewer: React.FC<TimingDiagramViewerProps> = ({
             onClick={() => setEdgeType((e) => (e === 'rising' ? 'falling' : 'rising'))}
             className="min-h-[40px] md:min-h-0 px-2.5 py-1.5 rounded-2xl border-2 border-sky-200 border-b-4 bg-sky-50 hover:bg-sky-100 active:border-b-2 text-xs font-mono font-bold text-sky-800 cursor-pointer"
           >
-            {edgeType === 'rising' ? 'Kenar: ↑' : 'Kenar: ↓'}
+            {edgeType === 'rising' ? td.edgeRising : td.edgeFalling}
           </button>
 
           <button
@@ -208,14 +256,14 @@ export const TimingDiagramViewer: React.FC<TimingDiagramViewerProps> = ({
             onClick={() => applyPreset('alt')}
             className="min-h-[40px] md:min-h-0 px-2.5 py-1.5 rounded-2xl border-2 border-violet-200 border-b-4 bg-violet-50 hover:bg-violet-100 active:border-b-2 text-xs font-bold text-violet-800 cursor-pointer"
           >
-            Alternatif
+            {td.alternating}
           </button>
           <button
             type="button"
             onClick={() => applyPreset('toggle')}
             className="min-h-[40px] md:min-h-0 px-2.5 py-1.5 rounded-2xl border-2 border-amber-200 border-b-4 bg-amber-50 hover:bg-amber-100 active:border-b-2 text-xs font-bold text-amber-800 cursor-pointer"
           >
-            Toggle
+            {td.toggle}
           </button>
           <button
             type="button"
@@ -223,7 +271,7 @@ export const TimingDiagramViewer: React.FC<TimingDiagramViewerProps> = ({
             className="min-h-[40px] md:min-h-0 flex items-center gap-1 px-2.5 py-1.5 rounded-2xl border-2 border-rose-200 border-b-4 bg-rose-50 hover:bg-rose-100 active:border-b-2 text-xs font-bold text-rose-700 cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>Sıfırla</span>
+            <span>{td.reset}</span>
           </button>
         </div>
       </div>
@@ -236,7 +284,7 @@ export const TimingDiagramViewer: React.FC<TimingDiagramViewerProps> = ({
             {ffType !== 'JK' ? (
               <div className="space-y-1.5">
                 <div className="text-[11px] font-display font-extrabold text-sky-700">
-                  {ffType} Girişi (t₁ – t₈ Saat Çevrimleri)
+                  {td.inputCycles(ffType)}
                 </div>
                 <div className="grid grid-cols-4 gap-1.5">
                   {(ffType === 'D' ? dWave : tWave).map((v, i) => (
@@ -261,7 +309,7 @@ export const TimingDiagramViewer: React.FC<TimingDiagramViewerProps> = ({
               <>
                 <div className="space-y-1">
                   <div className="text-[11px] font-display font-extrabold text-sky-700">
-                    J Girişi (t₁ – t₈)
+                    {td.jInput}
                   </div>
                   <div className="grid grid-cols-4 gap-1.5">
                     {jWave.map((v, i) => (
@@ -283,7 +331,7 @@ export const TimingDiagramViewer: React.FC<TimingDiagramViewerProps> = ({
 
                 <div className="space-y-1">
                   <div className="text-[11px] font-display font-extrabold text-amber-700">
-                    K Girişi (t₁ – t₈)
+                    {td.kInput}
                   </div>
                   <div className="grid grid-cols-4 gap-1.5">
                     {kWave.map((v, i) => (
@@ -309,7 +357,7 @@ export const TimingDiagramViewer: React.FC<TimingDiagramViewerProps> = ({
           {/* Characteristic Equation Card */}
           <div className="bg-violet-50/60 border-2 border-violet-200 rounded-2xl p-3.5 space-y-1.5">
             <div className="text-[11px] font-display font-extrabold text-violet-700">
-              KARAKTERİSTİK DENKLEM ({ffType} FF)
+              {td.charEqTitle(ffType)}
             </div>
             <div className="font-mono text-sm font-black text-violet-900 bg-white/85 border border-violet-200 rounded-xl px-3 py-2">
               {ffMeta.eq}
@@ -320,7 +368,7 @@ export const TimingDiagramViewer: React.FC<TimingDiagramViewerProps> = ({
           </div>
 
           <div className="bg-emerald-50/60 border-2 border-emerald-200 rounded-2xl px-3.5 py-2 flex items-center justify-between text-xs font-mono font-bold text-emerald-900">
-            <span>Q Çıkış Dizisi:</span>
+            <span>{td.qSequence}</span>
             <span>{qWave.join(' ')}</span>
           </div>
         </div>

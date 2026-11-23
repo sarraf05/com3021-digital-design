@@ -19,14 +19,21 @@ import {
   Crosshair,
   Check,
   X,
+  FolderOpen,
+  Puzzle,
 } from 'lucide-react';
 import {
   COMPONENT_CATALOG,
   COMPONENT_CATEGORIES,
   MSI_SUBCATEGORIES,
+  buildCustomICMeta,
+  createCustomICNode,
   createDefaultNode,
+  getNodeMeta,
+  resetSubcircuitNodes,
 } from '../../engine/componentCatalog';
 import {
+  cloneNodesDeep,
   evaluateCircuit,
   verifyCircuitAgainstTruthTable,
 } from '../../engine/circuitEngine';
@@ -37,15 +44,27 @@ import type {
   CircuitWire,
   ComponentCategory,
   ComponentType,
+  CustomICColor,
+  CustomICDefinition,
+  CustomICPin,
   LogicValue,
   MsiSubcategory,
   PinDefinition,
   VerificationResult,
 } from '../../types/simulator';
+import { useSession } from '../../context/SessionContext';
+import {
+  UI_STRINGS,
+  CATEGORY_LABELS,
+  MSI_SUBCATEGORY_LABELS,
+  COMPONENT_LABELS_EN,
+  COMPONENT_DESCRIPTIONS_EN,
+} from '../../i18n/translations';
 import { NodeRenderer } from './NodeRenderer';
 
 interface CircuitSimulatorProps {
   mode?: 'lab' | 'challenge';
+  challengeKey?: string;
   challenge?: CircuitChallengeConfig;
   compact?: boolean;
   onChallengePass?: () => void;
@@ -54,15 +73,71 @@ interface CircuitSimulatorProps {
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 1.6;
 
-type PhonePaletteTab = 'Temel' | '2-Giriş' | '3-Giriş' | 'MSI' | 'Flip-Flop';
+type PhonePaletteTab =
+  | 'Özel IC'
+  | 'Temel'
+  | '2-Giriş'
+  | '3-Giriş'
+  | 'MSI'
+  | 'Flip-Flop';
 
 const PHONE_PALETTE_TABS: { id: PhonePaletteTab; categories: ComponentCategory[] }[] = [
+  { id: 'Özel IC', categories: [] },
   { id: 'Temel', categories: ['Girişler', 'Çıkışlar'] },
   { id: '2-Giriş', categories: ['2-Girişli Kapılar'] },
   { id: '3-Giriş', categories: ['3-Girişli Kapılar'] },
   { id: 'MSI', categories: ['MSI Bloklar'] },
   { id: 'Flip-Flop', categories: ['Ardışıl Elemanlar'] },
 ];
+
+const CUSTOM_IC_COLORS: CustomICColor[] = ['mint', 'sky', 'coral', 'violet', 'amber'];
+
+const CUSTOM_IC_ACCENTS: Record<
+  CustomICColor,
+  {
+    itemBg: string;
+    itemBorder: string;
+    tag: string;
+    swatch: string;
+    swatchRing: string;
+  }
+> = {
+  mint: {
+    itemBg: 'bg-emerald-50/90 hover:bg-emerald-100/90',
+    itemBorder: 'border-emerald-200 hover:border-emerald-400',
+    tag: 'text-emerald-800 bg-emerald-100',
+    swatch: 'bg-emerald-400 border-emerald-600',
+    swatchRing: 'ring-emerald-300',
+  },
+  sky: {
+    itemBg: 'bg-sky-50/90 hover:bg-sky-100/90',
+    itemBorder: 'border-sky-200 hover:border-sky-400',
+    tag: 'text-sky-800 bg-sky-100',
+    swatch: 'bg-sky-400 border-sky-600',
+    swatchRing: 'ring-sky-300',
+  },
+  coral: {
+    itemBg: 'bg-rose-50/90 hover:bg-rose-100/90',
+    itemBorder: 'border-rose-200 hover:border-rose-400',
+    tag: 'text-rose-800 bg-rose-100',
+    swatch: 'bg-rose-400 border-rose-600',
+    swatchRing: 'ring-rose-300',
+  },
+  violet: {
+    itemBg: 'bg-violet-50/90 hover:bg-violet-100/90',
+    itemBorder: 'border-violet-200 hover:border-violet-400',
+    tag: 'text-violet-800 bg-violet-100',
+    swatch: 'bg-violet-400 border-violet-600',
+    swatchRing: 'ring-violet-300',
+  },
+  amber: {
+    itemBg: 'bg-amber-50/90 hover:bg-amber-100/90',
+    itemBorder: 'border-amber-200 hover:border-amber-400',
+    tag: 'text-amber-800 bg-amber-100',
+    swatch: 'bg-amber-400 border-amber-600',
+    swatchRing: 'ring-amber-300',
+  },
+};
 
 const CATEGORY_ACCENTS: Record<
   ComponentCategory,
@@ -146,32 +221,32 @@ const TWO_INPUT_GATES: ComponentType[] = ['AND', 'OR', 'NAND', 'NOR', 'XOR', 'XN
 const THREE_INPUT_GATES: ComponentType[] = ['AND3', 'OR3', 'NAND3', 'NOR3', 'XOR3', 'XNOR3'];
 
 const MSI_SWAP_FAMILIES: {
-  label: string;
+  familyKey: keyof typeof UI_STRINGS.tr.simulator.msiSwapFamilies;
   accent: string;
   types: ComponentType[];
 }[] = [
   {
-    label: 'Multiplexer Boyutu',
+    familyKey: 'mux',
     accent: 'violet',
     types: ['MUX_2X1', 'MUX_4X1', 'MUX_8X1'],
   },
   {
-    label: 'Demultiplexer Boyutu',
+    familyKey: 'demux',
     accent: 'indigo',
     types: ['DEMUX_1TO2', 'DEMUX_1TO4', 'DEMUX_1TO8'],
   },
   {
-    label: 'Decoder Boyutu',
+    familyKey: 'dec',
     accent: 'teal',
     types: ['DECODER_2TO4', 'DECODER_3TO8'],
   },
   {
-    label: 'Encoder Boyutu / Türü',
+    familyKey: 'enc',
     accent: 'pink',
     types: ['ENCODER_4TO2', 'ENCODER_8TO3', 'PRIORITY_ENCODER_4TO2'],
   },
   {
-    label: 'Toplayıcı Türü',
+    familyKey: 'adder',
     accent: 'rose',
     types: ['HALF_ADDER', 'FULL_ADDER'],
   },
@@ -228,14 +303,27 @@ function computePreviewBezier(
 
 export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
   mode = 'lab',
+  challengeKey,
   challenge,
   compact = false,
   onChallengePass,
 }) => {
-  const presets = useMemo(() => getCircuitPresets(), []);
+  const { session, setLabCircuit, setChallengeCircuit, addCustomIC, removeCustomIC } =
+    useSession();
+  const customICs = session.customICs;
+  const customICsRef = useRef(customICs);
+  customICsRef.current = customICs;
+  const lang = session.language;
+  const sim = UI_STRINGS[lang].simulator;
+  const getCompLabel = (comp: { type: ComponentType; label: string }) =>
+    lang === 'en' ? COMPONENT_LABELS_EN[comp.type] ?? comp.label : comp.label;
+  const getCompDesc = (comp: { type: ComponentType; description: string }) =>
+    lang === 'en' ? COMPONENT_DESCRIPTIONS_EN[comp.type] : comp.description;
+  const presets = useMemo(() => getCircuitPresets(lang), [lang]);
   const svgRef = useRef<SVGSVGElement>(null);
   const canvasWrapRef = useRef<HTMLDivElement>(null);
   const contextMenuRef = useRef<HTMLDivElement>(null);
+  const toastTimerRef = useRef<number | null>(null);
   const spawnCascadeRef = useRef(0);
   const activePointersRef = useRef<Map<number, { clientX: number; clientY: number }>>(new Map());
   const pinchStateRef = useRef<{
@@ -248,6 +336,15 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
   } | null>(null);
   const longPressTimerRef = useRef<number | null>(null);
 
+  const savedChallengeOnMountRef = useRef(
+    mode === 'challenge' && challengeKey
+      ? session.challengeCircuits[challengeKey]
+      : undefined
+  );
+  const savedLabOnMountRef = useRef(
+    mode === 'lab' ? session.labCircuit : null
+  );
+
   const [paletteCollapsed, setPaletteCollapsed] = useState(false);
   const [phoneSheetExpanded, setPhoneSheetExpanded] = useState(false);
   const [phonePaletteTab, setPhonePaletteTab] = useState<PhonePaletteTab>('Temel');
@@ -255,28 +352,75 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
     Partial<Record<MsiSubcategory, boolean>>
   >({});
   const [viewportSize, setViewportSize] = useState({ width: 780, height: 480 });
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState<number>(() => {
+    if (mode === 'lab' && savedLabOnMountRef.current) {
+      return savedLabOnMountRef.current.zoom ?? 1;
+    }
+    if (mode === 'challenge' && savedChallengeOnMountRef.current?.zoom !== undefined) {
+      return savedChallengeOnMountRef.current.zoom;
+    }
+    return 1;
+  });
+  const [pan, setPan] = useState<{ x: number; y: number }>(() => {
+    if (mode === 'lab' && savedLabOnMountRef.current?.pan) {
+      return savedLabOnMountRef.current.pan;
+    }
+    if (mode === 'challenge' && savedChallengeOnMountRef.current?.pan) {
+      return savedChallengeOnMountRef.current.pan;
+    }
+    return { x: 0, y: 0 };
+  });
 
-  const [activePresetId, setActivePresetId] = useState<string>(
-    mode === 'lab' ? 'half-adder' : 'challenge'
-  );
+  const [activePresetId, setActivePresetId] = useState<string>(() => {
+    if (mode === 'lab') {
+      return savedLabOnMountRef.current?.activePresetId ?? 'half-adder';
+    }
+    return 'challenge';
+  });
   const [nodes, setNodes] = useState<CircuitNode[]>(() => {
-    if (mode === 'challenge' && challenge) {
-      return evaluateCircuit(buildChallengeStarter(challenge), [], false);
+    if (mode === 'challenge') {
+      if (savedChallengeOnMountRef.current) {
+        return evaluateCircuit(
+          savedChallengeOnMountRef.current.nodes,
+          savedChallengeOnMountRef.current.wires,
+          false,
+          session.customICs
+        );
+      }
+      if (challenge) {
+        return evaluateCircuit(buildChallengeStarter(challenge), [], false, session.customICs);
+      }
+    }
+    if (mode === 'lab' && savedLabOnMountRef.current) {
+      return evaluateCircuit(
+        savedLabOnMountRef.current.nodes,
+        savedLabOnMountRef.current.wires,
+        false,
+        session.customICs
+      );
     }
     const p = presets[0];
-    return evaluateCircuit(p.nodes, p.wires, false);
+    return evaluateCircuit(p.nodes, p.wires, false, session.customICs);
   });
 
   const [wires, setWires] = useState<CircuitWire[]>(() => {
-    if (mode === 'challenge') return [];
+    if (mode === 'challenge') {
+      return savedChallengeOnMountRef.current?.wires ?? [];
+    }
+    if (mode === 'lab' && savedLabOnMountRef.current) {
+      return savedLabOnMountRef.current.wires;
+    }
     return presets[0].wires;
   });
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedWireId, setSelectedWireId] = useState<string | null>(null);
-  const [verification, setVerification] = useState<VerificationResult | null>(null);
+  const [verification, setVerification] = useState<VerificationResult | null>(() => {
+    if (mode === 'challenge' && savedChallengeOnMountRef.current) {
+      return savedChallengeOnMountRef.current.verification ?? null;
+    }
+    return null;
+  });
 
   const [contextMenu, setContextMenu] = useState<{
     nodeId: string;
@@ -290,6 +434,8 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
     offsetY: number;
     startClientX: number;
     startClientY: number;
+    startTime: number;
+    hasMovedPastDeadzone: boolean;
   } | null>(null);
 
   const [panning, setPanning] = useState<{
@@ -312,6 +458,38 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
   const [pointerPos, setPointerPos] = useState<{ x: number; y: number } | null>(null);
 
   const [clockRunningIds, setClockRunningIds] = useState<Record<string, boolean>>({});
+  const [canvasToast, setCanvasToast] = useState<{
+    message: string;
+    tone: 'warn' | 'success' | 'info';
+  } | null>(null);
+  const [packageModal, setPackageModal] = useState<{
+    name: string;
+    color: CustomICColor;
+    inputPins: CustomICPin[];
+    outputPins: CustomICPin[];
+  } | null>(null);
+
+  const showCanvasToast = useCallback(
+    (message: string, tone: 'warn' | 'success' | 'info' = 'info') => {
+      setCanvasToast({ message, tone });
+      if (toastTimerRef.current !== null) {
+        window.clearTimeout(toastTimerRef.current);
+      }
+      toastTimerRef.current = window.setTimeout(() => {
+        setCanvasToast(null);
+        toastTimerRef.current = null;
+      }, 4200);
+    },
+    []
+  );
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current !== null) {
+        window.clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
 
   // Measure right canvas pixel dimensions so SVG viewBox always matches 1:1 aspect ratio
   useEffect(() => {
@@ -348,7 +526,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
       let maxX = -Infinity;
       let maxY = -Infinity;
       for (const n of targetNodes) {
-        const meta = COMPONENT_CATALOG[n.type];
+        const meta = getNodeMeta(n, customICsRef.current);
         minX = Math.min(minX, n.x);
         minY = Math.min(minY, n.y);
         maxX = Math.max(maxX, n.x + meta.width);
@@ -372,25 +550,96 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
     [viewportSize]
   );
 
-  // Center initial challenge nodes on mount/challenge change
+  // Center initial challenge nodes only when starting fresh (never wipe restored session or re-render)
+  const challengeRef = useRef(challenge);
+  challengeRef.current = challenge;
+  const sessionChallengeCircuitsRef = useRef(session.challengeCircuits);
+  sessionChallengeCircuitsRef.current = session.challengeCircuits;
+  const initializedChallengeKeyRef = useRef<string | undefined>(undefined);
+
   useEffect(() => {
-    if (mode === 'challenge' && challenge) {
-      const starter = evaluateCircuit(buildChallengeStarter(challenge), [], false);
-      setNodes(starter);
-      setWires([]);
-      setVerification(null);
-      setSelectedNodeId(null);
-      setSelectedWireId(null);
-      setConnectingFrom(null);
-      setPointerPos(null);
-      setContextMenu(null);
-      const rect = canvasWrapRef.current?.getBoundingClientRect();
-      centerNodesInViewport(
-        starter,
-        rect && rect.width > 40 ? { width: rect.width, height: rect.height } : undefined
-      );
+    if (mode !== 'challenge' || !challengeRef.current) return;
+    if (initializedChallengeKeyRef.current === challengeKey && challengeKey !== undefined) {
+      return;
     }
-  }, [mode, challenge]);
+    initializedChallengeKeyRef.current = challengeKey;
+
+    const existing = challengeKey
+      ? sessionChallengeCircuitsRef.current[challengeKey]
+      : undefined;
+    if (existing) {
+      const evaluated = evaluateCircuit(
+        existing.nodes,
+        existing.wires,
+        false,
+        customICsRef.current
+      );
+      setNodes(evaluated);
+      setWires(existing.wires);
+      setVerification(existing.verification ?? null);
+      if (existing.zoom !== undefined) setZoom(existing.zoom);
+      if (existing.pan) setPan(existing.pan);
+      return;
+    }
+
+    const starter = evaluateCircuit(
+      buildChallengeStarter(challengeRef.current),
+      [],
+      false,
+      customICsRef.current
+    );
+    setNodes(starter);
+    setWires([]);
+    setVerification(null);
+    setSelectedNodeId(null);
+    setSelectedWireId(null);
+    setConnectingFrom(null);
+    setPointerPos(null);
+    setContextMenu(null);
+    const rect = canvasWrapRef.current?.getBoundingClientRect();
+    centerNodesInViewport(
+      starter,
+      rect && rect.width > 40 ? { width: rect.width, height: rect.height } : undefined
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, challengeKey]);
+
+  // Sync circuit changes back to SessionContext (debounced persistence in SessionProvider)
+  const skipFirstSyncRef = useRef(true);
+  useEffect(() => {
+    if (skipFirstSyncRef.current) {
+      skipFirstSyncRef.current = false;
+      return;
+    }
+    if (mode === 'lab') {
+      setLabCircuit({
+        activePresetId,
+        nodes,
+        wires,
+        zoom,
+        pan,
+      });
+    } else if (mode === 'challenge' && challengeKey) {
+      setChallengeCircuit(challengeKey, {
+        nodes,
+        wires,
+        zoom,
+        pan,
+        verification,
+      });
+    }
+  }, [
+    mode,
+    challengeKey,
+    activePresetId,
+    nodes,
+    wires,
+    zoom,
+    pan,
+    verification,
+    setLabCircuit,
+    setChallengeCircuit,
+  ]);
 
   // Close floating right-click context menu on outside click
   useEffect(() => {
@@ -410,7 +659,12 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
 
   const applyEvaluation = useCallback(
     (nextNodes: CircuitNode[], nextWires: CircuitWire[], triggerSeq = true) => {
-      const evaluated = evaluateCircuit(nextNodes, nextWires, triggerSeq);
+      const evaluated = evaluateCircuit(
+        nextNodes,
+        nextWires,
+        triggerSeq,
+        customICsRef.current
+      );
       setNodes(evaluated);
     },
     []
@@ -504,7 +758,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
 
     for (const node of nodes) {
       if (node.id === connectingFrom.nodeId) continue;
-      const meta = COMPONENT_CATALOG[node.type];
+      const meta = getNodeMeta(node, customICs);
       for (const pin of meta.pins) {
         if (pin.direction === connectingFrom.direction) continue;
         const px = node.x + pin.relX;
@@ -523,7 +777,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
       }
     }
     return best;
-  }, [connectingFrom, pointerPos, nodes, zoom]);
+  }, [connectingFrom, pointerPos, nodes, zoom, customICs]);
 
   const completeWireConnection = useCallback(
     (
@@ -589,7 +843,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                 }
               : n
           );
-          return evaluateCircuit(updated, wires, true);
+          return evaluateCircuit(updated, wires, true, customICsRef.current);
         });
       }, halfPeriodMs);
     });
@@ -602,6 +856,13 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
   // Keyboard Delete / Backspace / Escape handler
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setConnectingFrom(null);
+        setPointerPos(null);
+        setContextMenu(null);
+        setPackageModal(null);
+        return;
+      }
       if (
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement
@@ -630,10 +891,6 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
             setVerification(null);
           }
         }
-      } else if (e.key === 'Escape') {
-        setConnectingFrom(null);
-        setPointerPos(null);
-        setContextMenu(null);
       }
     };
     window.addEventListener('keydown', onKeyDown);
@@ -678,6 +935,32 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
     addComponentAt(type, x, y, false);
   };
 
+  const handleCustomICClick = (ic: CustomICDefinition) => {
+    const meta = buildCustomICMeta(ic);
+    const baseStep = (spawnCascadeRef.current % 6) * 24;
+    spawnCascadeRef.current += 1;
+
+    let x = Math.round(pan.x + viewW / 2 - meta.width / 2 - 48 + baseStep);
+    let y = Math.round(pan.y + viewH / 2 - meta.height / 2 - 48 + baseStep);
+
+    let guard = 0;
+    while (
+      guard < 8 &&
+      nodes.some((n) => Math.hypot(n.x - x, n.y - y) < 20)
+    ) {
+      x += 24;
+      y += 24;
+      guard++;
+    }
+
+    const newNode = createCustomICNode(ic, makeUid('ic'), x, y);
+    const nextNodes = [...nodes, newNode];
+    applyEvaluation(nextNodes, wires, false);
+    setSelectedNodeId(newNode.id);
+    setSelectedWireId(null);
+    setVerification(null);
+  };
+
   const handleCanvasDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'copy';
@@ -685,8 +968,24 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
 
   const handleCanvasDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    const customIcId = e.dataTransfer.getData('application/com3021-custom-ic');
+    if (customIcId) {
+      const ic = customICs.find((item) => item.id === customIcId);
+      if (!ic) return;
+      const { x, y } = clientToSvgCoords(e.clientX, e.clientY);
+      const meta = buildCustomICMeta(ic);
+      const snapX = Math.round((x - meta.width / 2) / 10) * 10;
+      const snapY = Math.round((y - meta.height / 2) / 10) * 10;
+      const newNode = createCustomICNode(ic, makeUid('ic'), snapX, snapY);
+      applyEvaluation([...nodes, newNode], wires, false);
+      setSelectedNodeId(newNode.id);
+      setSelectedWireId(null);
+      setVerification(null);
+      return;
+    }
+
     const type = e.dataTransfer.getData('application/com3021-component') as ComponentType;
-    if (!type || !COMPONENT_CATALOG[type]) return;
+    if (!type || !COMPONENT_CATALOG[type] || type === 'CUSTOM_IC') return;
     const { x, y } = clientToSvgCoords(e.clientX, e.clientY);
     const meta = COMPONENT_CATALOG[type];
     addComponentAt(type, x - meta.width / 2, y - meta.height / 2);
@@ -842,13 +1141,20 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
 
     const coords = clientToSvgCoords(e.clientX, e.clientY);
     if (draggingNode) {
-      if (
-        Math.hypot(
-          e.clientX - draggingNode.startClientX,
-          e.clientY - draggingNode.startClientY
-        ) > 6
-      ) {
+      const moveDist = Math.hypot(
+        e.clientX - draggingNode.startClientX,
+        e.clientY - draggingNode.startClientY
+      );
+      if (moveDist > 6) {
         clearLongPressTimer();
+      }
+      if (!draggingNode.hasMovedPastDeadzone) {
+        if (moveDist <= 8) {
+          return;
+        }
+        setDraggingNode((prev) =>
+          prev ? { ...prev, hasMovedPastDeadzone: true } : null
+        );
       }
       const snapX = Math.round((coords.x - draggingNode.offsetX) / 10) * 10;
       const snapY = Math.round((coords.y - draggingNode.offsetY) / 10) * 10;
@@ -887,6 +1193,21 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
       return;
     }
     if (draggingNode) {
+      clearLongPressTimer();
+      const dist = Math.hypot(
+        e.clientX - draggingNode.startClientX,
+        e.clientY - draggingNode.startClientY
+      );
+      const elapsed = Date.now() - draggingNode.startTime;
+      const tappedNode = nodes.find((n) => n.id === draggingNode.nodeId);
+      if (
+        tappedNode?.type === 'SWITCH' &&
+        !draggingNode.hasMovedPastDeadzone &&
+        dist <= 8 &&
+        elapsed < 450
+      ) {
+        handleToggleSwitch(tappedNode.id);
+      }
       setDraggingNode(null);
     }
     if (connectingFrom) {
@@ -932,6 +1253,8 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
       offsetY: coords.y - node.y,
       startClientX: e.clientX,
       startClientY: e.clientY,
+      startTime: Date.now(),
+      hasMovedPastDeadzone: false,
     });
 
     clearLongPressTimer();
@@ -1027,20 +1350,25 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
     }
   };
 
-  const handleToggleSwitch = (nodeId: string) => {
-    const nextNodes = nodes.map((n) =>
-      n.id === nodeId
-        ? {
-            ...n,
-            outputs: {
-              ...n.outputs,
-              out: (n.outputs.out === 1 ? 0 : 1) as LogicValue,
-            },
-          }
-        : n
-    );
-    applyEvaluation(nextNodes, wires, true);
-  };
+  const handleToggleSwitch = useCallback(
+    (nodeId: string) => {
+      setNodes((prevNodes) => {
+        const nextNodes = prevNodes.map((n) =>
+          n.id === nodeId
+            ? {
+                ...n,
+                outputs: {
+                  ...n.outputs,
+                  out: (n.outputs.out === 1 ? 0 : 1) as LogicValue,
+                },
+              }
+            : n
+        );
+        return evaluateCircuit(nextNodes, wires, true, customICsRef.current);
+      });
+    },
+    [wires]
+  );
 
   const handleButtonState = (nodeId: string, val: LogicValue) => {
     const nextNodes = nodes.map((n) =>
@@ -1066,36 +1394,81 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
     );
   };
 
-  const pulseClockIds = (targetIds: Set<string>) => {
-    if (targetIds.size === 0) return;
-    const lowNodes = nodes.map((n) =>
-      targetIds.has(n.id) ? { ...n, outputs: { ...n.outputs, out: 0 as LogicValue } } : n
+  const setInternalClocksValue = (
+    list: CircuitNode[],
+    val: LogicValue
+  ): CircuitNode[] =>
+    list.map((n) => {
+      if (n.type === 'CLOCK') {
+        return { ...n, outputs: { ...n.outputs, out: val } };
+      }
+      if (n.type === 'CUSTOM_IC' && n.internal.subcircuitNodes) {
+        return {
+          ...n,
+          internal: {
+            ...n.internal,
+            subcircuitNodes: setInternalClocksValue(n.internal.subcircuitNodes, val),
+          },
+        };
+      }
+      return n;
+    });
+
+  const hasSubcircuitClock = (node: CircuitNode): boolean =>
+    Boolean(
+      node.type === 'CUSTOM_IC' &&
+        node.internal.subcircuitNodes?.some(
+          (sn) => sn.type === 'CLOCK' || hasSubcircuitClock(sn)
+        )
     );
-    const settledLow = evaluateCircuit(lowNodes, wires, true);
-    const highNodes = settledLow.map((n) =>
-      targetIds.has(n.id) ? { ...n, outputs: { ...n.outputs, out: 1 as LogicValue } } : n
-    );
-    const triggered = evaluateCircuit(highNodes, wires, true);
+
+  const pulseClockIds = (targetIds: Set<string>, includeSubcircuitClocks = false) => {
+    if (targetIds.size === 0 && !includeSubcircuitClocks) return;
+
+    const applyClockLevel = (list: CircuitNode[], val: LogicValue) =>
+      list.map((n) => {
+        if (targetIds.has(n.id)) {
+          return { ...n, outputs: { ...n.outputs, out: val } };
+        }
+        if (
+          includeSubcircuitClocks &&
+          n.type === 'CUSTOM_IC' &&
+          n.internal.subcircuitNodes
+        ) {
+          return {
+            ...n,
+            internal: {
+              ...n.internal,
+              subcircuitNodes: setInternalClocksValue(n.internal.subcircuitNodes, val),
+            },
+          };
+        }
+        return n;
+      });
+
+    const lowNodes = applyClockLevel(nodes, 0);
+    const settledLow = evaluateCircuit(lowNodes, wires, true, customICsRef.current);
+    const highNodes = applyClockLevel(settledLow, 1);
+    const triggered = evaluateCircuit(highNodes, wires, true, customICsRef.current);
     setNodes(triggered);
 
     window.setTimeout(() => {
       setNodes((latest) => {
-        const falling = latest.map((n) =>
-          targetIds.has(n.id) ? { ...n, outputs: { ...n.outputs, out: 0 as LogicValue } } : n
-        );
-        return evaluateCircuit(falling, wires, true);
+        const falling = applyClockLevel(latest, 0);
+        return evaluateCircuit(falling, wires, true, customICsRef.current);
       });
     }, 180);
   };
 
   const handleClockStepPulse = (nodeId: string) => {
-    pulseClockIds(new Set([nodeId]));
+    pulseClockIds(new Set([nodeId]), false);
   };
 
   const handleGlobalClockPulse = () => {
     const clockNodes = nodes.filter((n) => n.type === 'CLOCK');
-    if (clockNodes.length > 0) {
-      pulseClockIds(new Set(clockNodes.map((n) => n.id)));
+    const hasNestedClocks = nodes.some((n) => hasSubcircuitClock(n));
+    if (clockNodes.length > 0 || hasNestedClocks) {
+      pulseClockIds(new Set(clockNodes.map((n) => n.id)), hasNestedClocks);
     } else {
       handlePaletteClick('CLOCK');
     }
@@ -1122,7 +1495,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
       return;
     }
 
-    const oldMeta = COMPONENT_CATALOG[target.type];
+    const oldMeta = getNodeMeta(target, customICs);
     const newMeta = COMPONENT_CATALOG[nextType];
 
     const validInPinIds = new Set(
@@ -1207,6 +1580,98 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
     setVerification(null);
   };
 
+  const handleOpenPackageModal = () => {
+    const switchNodes = nodes
+      .filter((n) => n.type === 'SWITCH')
+      .sort((a, b) => a.y - b.y || a.x - b.x);
+    const ledNodes = nodes
+      .filter((n) => n.type === 'LED')
+      .sort((a, b) => a.y - b.y || a.x - b.x);
+
+    if (switchNodes.length < 1 || ledNodes.length < 1) {
+      showCanvasToast(sim.customIC.validationNeedPins, 'warn');
+      return;
+    }
+
+    const inputPins: CustomICPin[] = switchNodes.map((n, idx) => ({
+      id: `in_${idx}`,
+      name: n.label.trim() || `IN${idx}`,
+      nodeId: n.id,
+    }));
+    const outputPins: CustomICPin[] = ledNodes.map((n, idx) => ({
+      id: `out_${idx}`,
+      name: n.label.trim() || `OUT${idx}`,
+      nodeId: n.id,
+    }));
+
+    const defaultColor = CUSTOM_IC_COLORS[customICs.length % CUSTOM_IC_COLORS.length];
+    const defaultName =
+      lang === 'en'
+        ? `Custom IC ${customICs.length + 1}`
+        : `Özel IC ${customICs.length + 1}`;
+
+    setPackageModal({
+      name: defaultName,
+      color: defaultColor,
+      inputPins,
+      outputPins,
+    });
+  };
+
+  const handleConfirmPackageIC = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!packageModal) return;
+    const trimmedName = packageModal.name.trim() || `IC ${customICs.length + 1}`;
+    const blueprint: CustomICDefinition = {
+      id: makeUid('cic'),
+      name: trimmedName,
+      color: packageModal.color,
+      inputPins: packageModal.inputPins.map((p) => ({ ...p })),
+      outputPins: packageModal.outputPins.map((p) => ({ ...p })),
+      internalNodes: resetSubcircuitNodes(cloneNodesDeep(nodes)),
+      internalWires: wires.map((w) => ({ ...w })),
+    };
+
+    addCustomIC(blueprint);
+    setPackageModal(null);
+    setPhonePaletteTab('Özel IC');
+    showCanvasToast(sim.customIC.savedToast(blueprint.name), 'success');
+  };
+
+  const handleLoadInternalCircuit = (nodeId: string) => {
+    const target = nodes.find((n) => n.id === nodeId);
+    if (!target || target.type !== 'CUSTOM_IC') return;
+
+    const blueprint = target.customIcId
+      ? customICs.find((ic) => ic.id === target.customIcId)
+      : undefined;
+    const sourceNodes = target.internal.subcircuitNodes ?? blueprint?.internalNodes ?? [];
+    const sourceWires = target.internal.subcircuitWires ?? blueprint?.internalWires ?? [];
+
+    if (sourceNodes.length === 0) return;
+
+    const clonedNodes = cloneNodesDeep(sourceNodes).map((n) => ({
+      ...n,
+      locked: false,
+    }));
+    const clonedWires = sourceWires.map((w) => ({ ...w }));
+
+    setActivePresetId('empty');
+    setClockRunningIds({});
+    setSelectedNodeId(null);
+    setSelectedWireId(null);
+    setConnectingFrom(null);
+    setPointerPos(null);
+    setContextMenu(null);
+    setVerification(null);
+    setWires(clonedWires);
+
+    const evaluated = evaluateCircuit(clonedNodes, clonedWires, false, customICs);
+    setNodes(evaluated);
+    centerNodesInViewport(evaluated);
+    showCanvasToast(sim.customIC.loadedToast(target.label), 'info');
+  };
+
   const handleLoadPreset = (presetId: string) => {
     const found = presets.find((p) => p.id === presetId);
     if (!found) return;
@@ -1218,7 +1683,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
     setConnectingFrom(null);
     setPointerPos(null);
     setContextMenu(null);
-    const evaluated = evaluateCircuit(found.nodes, found.wires, false);
+    const evaluated = evaluateCircuit(found.nodes, found.wires, false, customICs);
     setNodes(evaluated);
     centerNodesInViewport(evaluated);
   };
@@ -1232,7 +1697,12 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
     setContextMenu(null);
     setVerification(null);
     if (mode === 'challenge' && challenge) {
-      const starter = evaluateCircuit(buildChallengeStarter(challenge), [], false);
+      const starter = evaluateCircuit(
+        buildChallengeStarter(challenge),
+        [],
+        false,
+        customICs
+      );
       setWires([]);
       setNodes(starter);
       centerNodesInViewport(starter);
@@ -1246,7 +1716,13 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
 
   const handleVerifyChallenge = () => {
     if (!challenge) return;
-    const result = verifyCircuitAgainstTruthTable(nodes, wires, challenge);
+    const result = verifyCircuitAgainstTruthTable(
+      nodes,
+      wires,
+      challenge,
+      lang,
+      customICs
+    );
     setVerification(result);
     if (result.passed && onChallengePass) {
       onChallengePass();
@@ -1303,26 +1779,37 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
 
   const visiblePhoneTabs = useMemo(
     () =>
-      PHONE_PALETTE_TABS.filter((tab) =>
-        Object.values(COMPONENT_CATALOG).some(
+      PHONE_PALETTE_TABS.filter((tab) => {
+        if (tab.id === 'Özel IC') {
+          return mode === 'lab' && customICs.length > 0;
+        }
+        return Object.values(COMPONENT_CATALOG).some(
           (item) =>
+            item.type !== 'CUSTOM_IC' &&
             tab.categories.includes(item.category) &&
             (!allowedSet || allowedSet.has(item.type))
-        )
-      ),
-    [allowedSet]
+        );
+      }),
+    [allowedSet, mode, customICs.length]
   );
 
   const activePhoneTabItems = useMemo(() => {
     const activeTab =
       visiblePhoneTabs.find((t) => t.id === phonePaletteTab) ?? visiblePhoneTabs[0];
-    if (!activeTab) return [];
+    if (!activeTab || activeTab.id === 'Özel IC') return [];
     return Object.values(COMPONENT_CATALOG).filter(
       (item) =>
+        item.type !== 'CUSTOM_IC' &&
         activeTab.categories.includes(item.category) &&
         (!allowedSet || allowedSet.has(item.type))
     );
   }, [visiblePhoneTabs, phonePaletteTab, allowedSet]);
+
+  const activePhoneTabIsCustom = useMemo(() => {
+    const activeTab =
+      visiblePhoneTabs.find((t) => t.id === phonePaletteTab) ?? visiblePhoneTabs[0];
+    return activeTab?.id === 'Özel IC';
+  }, [visiblePhoneTabs, phonePaletteTab]);
 
   return (
     <div
@@ -1352,21 +1839,23 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                       <Cpu className="w-3.5 h-3.5" />
                     </span>
                     <span className="font-display font-extrabold text-xs text-slate-800 truncate">
-                      {mode === 'challenge' ? 'Devre Bileşenleri' : 'Kapı & Bloklar'}
+                      {mode === 'challenge'
+                        ? sim.paletteChallengeTitle
+                        : sim.paletteLabTitle}
                     </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setPaletteCollapsed(true)}
-                    title="Paleti Daralt"
-                    aria-label="Paleti Daralt"
+                    title={sim.collapsePalette}
+                    aria-label={sim.collapsePalette}
                     className="w-6 h-6 rounded-lg border-2 border-slate-200 bg-white hover:border-sky-300 text-slate-600 flex items-center justify-center shrink-0 cursor-pointer"
                   >
                     <ChevronLeft className="w-3.5 h-3.5" />
                   </button>
                 </div>
                 <div className="text-[10.5px] font-bold text-amber-800 bg-amber-100/80 border border-amber-200 rounded-xl px-2 py-1 text-center">
-                  Tıkla veya Sürükle ✨
+                  {sim.clickOrDragHint}
                 </div>
               </>
             ) : (
@@ -1374,8 +1863,8 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                 <button
                   type="button"
                   onClick={() => setPaletteCollapsed(false)}
-                  title="Paleti Genişlet"
-                  aria-label="Paleti Genişlet"
+                  title={sim.expandPalette}
+                  aria-label={sim.expandPalette}
                   className="w-9 h-8 rounded-xl border-2 border-sky-200 border-b-4 bg-white hover:bg-sky-50 text-sky-700 flex items-center justify-center cursor-pointer"
                 >
                   <ChevronRight className="w-4 h-4" />
@@ -1386,8 +1875,87 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
 
           {/* Independent Scrollable 2-Column Grid Component List */}
           <div className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain pastel-scrollbar p-2.5 space-y-3">
+            {/* Custom ICs Palette Section ("🧩 Özel Bloklarım") */}
+            {mode === 'lab' && customICs.length > 0 && (
+              <div>
+                {!paletteCollapsed && (
+                  <div className="text-[11px] font-display font-extrabold mb-1.5 px-1 truncate text-violet-700">
+                    {sim.customIC.paletteSectionTitle}
+                  </div>
+                )}
+                <div
+                  className={
+                    paletteCollapsed ? 'grid grid-cols-1 gap-1.5' : 'grid grid-cols-2 gap-2'
+                  }
+                >
+                  {customICs.map((ic) => {
+                    const accent = CUSTOM_IC_ACCENTS[ic.color];
+                    const pinDesc = sim.customIC.pinSummary(
+                      ic.inputPins.length,
+                      ic.outputPins.length
+                    );
+                    return (
+                      <div key={ic.id} className="relative group">
+                        <button
+                          type="button"
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData(
+                              'application/com3021-component',
+                              'CUSTOM_IC'
+                            );
+                            e.dataTransfer.setData(
+                              'application/com3021-custom-ic',
+                              ic.id
+                            );
+                            e.dataTransfer.effectAllowed = 'copy';
+                          }}
+                          onClick={() => handleCustomICClick(ic)}
+                          title={`${ic.name} (${pinDesc}) ${sim.clickOrDragSuffix}`}
+                          className={`w-full rounded-2xl border-2 border-b-4 active:border-b-2 active:translate-y-0.5 transition-all cursor-pointer flex flex-col items-center justify-center text-center ${
+                            paletteCollapsed ? 'px-1 py-2' : 'px-1.5 py-2'
+                          } ${accent.itemBg} ${accent.itemBorder}`}
+                        >
+                          <span
+                            className={`text-[10px] font-mono font-extrabold px-1.5 py-0.5 rounded-lg leading-tight ${accent.tag}`}
+                          >
+                            🧩 {paletteCollapsed ? '' : 'IC'}
+                          </span>
+                          {!paletteCollapsed && (
+                            <>
+                              <span className="text-[10.5px] font-bold text-slate-700 truncate w-full mt-1 px-0.5">
+                                {ic.name}
+                              </span>
+                              <span className="text-[9px] font-semibold text-slate-500 truncate w-full">
+                                {pinDesc}
+                              </span>
+                            </>
+                          )}
+                        </button>
+                        {!paletteCollapsed && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeCustomIC(ic.id);
+                            }}
+                            title={sim.customIC.deleteCustomIc}
+                            aria-label={sim.customIC.deleteCustomIc}
+                            className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-white border border-rose-200 text-rose-500 hover:bg-rose-500 hover:text-white flex items-center justify-center shadow-xs cursor-pointer"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {COMPONENT_CATEGORIES.map((category) => {
               const items = Object.values(COMPONENT_CATALOG).filter((item) => {
+                if (item.type === 'CUSTOM_IC') return false;
                 if (item.category !== category) return false;
                 if (allowedSet && !allowedSet.has(item.type)) return false;
                 return true;
@@ -1395,6 +1963,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
               if (items.length === 0) return null;
 
               const style = CATEGORY_ACCENTS[category];
+              const categoryLabel = CATEGORY_LABELS[category][lang];
 
               if (category === 'MSI Bloklar' && !paletteCollapsed) {
                 return (
@@ -1402,7 +1971,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                     <div
                       className={`text-[11px] font-display font-extrabold px-1 truncate ${style.badge}`}
                     >
-                      {category}
+                      {categoryLabel}
                     </div>
 
                     {MSI_SUBCATEGORIES.map((sub) => {
@@ -1410,6 +1979,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                       if (subItems.length === 0) return null;
                       const subAccent = MSI_SUBCATEGORY_ACCENTS[sub];
                       const isCollapsed = Boolean(collapsedMsiGroups[sub]);
+                      const subLabel = MSI_SUBCATEGORY_LABELS[sub][lang];
 
                       return (
                         <div key={sub} className="space-y-1.5">
@@ -1423,7 +1993,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                             }
                             className={`w-full flex items-center justify-between gap-1.5 px-2 py-1 rounded-xl border text-[10.5px] font-display font-extrabold transition-colors cursor-pointer ${subAccent.header}`}
                           >
-                            <span className="truncate">{sub}</span>
+                            <span className="truncate">{subLabel}</span>
                             <ChevronDown
                               className={`w-3.5 h-3.5 shrink-0 transition-transform duration-150 ${
                                 isCollapsed ? '-rotate-90' : 'rotate-0'
@@ -1433,32 +2003,36 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
 
                           {!isCollapsed && (
                             <div className="grid grid-cols-2 gap-1.5">
-                              {subItems.map((comp) => (
-                                <button
-                                  key={comp.type}
-                                  type="button"
-                                  draggable
-                                  onDragStart={(e) => {
-                                    e.dataTransfer.setData(
-                                      'application/com3021-component',
-                                      comp.type
-                                    );
-                                    e.dataTransfer.effectAllowed = 'copy';
-                                  }}
-                                  onClick={() => handlePaletteClick(comp.type)}
-                                  title={`${comp.label}: ${comp.description} (Tıkla veya Sürükle)`}
-                                  className={`rounded-2xl border-2 border-b-4 active:border-b-2 active:translate-y-0.5 transition-all cursor-pointer flex flex-col items-center justify-center text-center px-1.5 py-2 ${subAccent.itemBg} ${subAccent.itemBorder}`}
-                                >
-                                  <span
-                                    className={`text-[10px] font-mono font-extrabold px-1.5 py-0.5 rounded-lg leading-tight ${subAccent.tag}`}
+                              {subItems.map((comp) => {
+                                const cLabel = getCompLabel(comp);
+                                const cDesc = getCompDesc(comp);
+                                return (
+                                  <button
+                                    key={comp.type}
+                                    type="button"
+                                    draggable
+                                    onDragStart={(e) => {
+                                      e.dataTransfer.setData(
+                                        'application/com3021-component',
+                                        comp.type
+                                      );
+                                      e.dataTransfer.effectAllowed = 'copy';
+                                    }}
+                                    onClick={() => handlePaletteClick(comp.type)}
+                                    title={`${cLabel}: ${cDesc} ${sim.clickOrDragSuffix}`}
+                                    className={`rounded-2xl border-2 border-b-4 active:border-b-2 active:translate-y-0.5 transition-all cursor-pointer flex flex-col items-center justify-center text-center px-1.5 py-2 ${subAccent.itemBg} ${subAccent.itemBorder}`}
                                   >
-                                    {comp.shortLabel}
-                                  </span>
-                                  <span className="text-[10px] font-bold text-slate-700 truncate w-full mt-1 px-0.5 leading-tight">
-                                    {comp.label}
-                                  </span>
-                                </button>
-                              ))}
+                                    <span
+                                      className={`text-[10px] font-mono font-extrabold px-1.5 py-0.5 rounded-lg leading-tight ${subAccent.tag}`}
+                                    >
+                                      {comp.shortLabel}
+                                    </span>
+                                    <span className="text-[10px] font-bold text-slate-700 truncate w-full mt-1 px-0.5 leading-tight">
+                                      {cLabel}
+                                    </span>
+                                  </button>
+                                );
+                              })}
                             </div>
                           )}
                         </div>
@@ -1474,7 +2048,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                     <div
                       className={`text-[11px] font-display font-extrabold mb-1.5 px-1 truncate ${style.badge}`}
                     >
-                      {category}
+                      {categoryLabel}
                     </div>
                   )}
 
@@ -1488,6 +2062,8 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                         comp.subcategory && paletteCollapsed
                           ? MSI_SUBCATEGORY_ACCENTS[comp.subcategory]
                           : style;
+                      const cLabel = getCompLabel(comp);
+                      const cDesc = getCompDesc(comp);
                       return (
                         <button
                           key={comp.type}
@@ -1498,7 +2074,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                             e.dataTransfer.effectAllowed = 'copy';
                           }}
                           onClick={() => handlePaletteClick(comp.type)}
-                          title={`${comp.label}: ${comp.description} (Tıkla veya Sürükle)`}
+                          title={`${cLabel}: ${cDesc} ${sim.clickOrDragSuffix}`}
                           className={`rounded-2xl border-2 border-b-4 active:border-b-2 active:translate-y-0.5 transition-all cursor-pointer flex flex-col items-center justify-center text-center ${
                             paletteCollapsed ? 'px-1 py-2' : 'px-1.5 py-2'
                           } ${tileAccent.itemBg} ${tileAccent.itemBorder}`}
@@ -1510,7 +2086,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                           </span>
                           {!paletteCollapsed && (
                             <span className="text-[10.5px] font-bold text-slate-700 truncate w-full mt-1 px-0.5">
-                              {comp.label}
+                              {cLabel}
                             </span>
                           )}
                         </button>
@@ -1572,10 +2148,10 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
               const dstNode = nodes.find((n) => n.id === wire.toNodeId);
               if (!srcNode || !dstNode) return null;
 
-              const srcPin = COMPONENT_CATALOG[srcNode.type].pins.find(
+              const srcPin = getNodeMeta(srcNode, customICs).pins.find(
                 (p) => p.id === wire.fromPinId
               );
-              const dstPin = COMPONENT_CATALOG[dstNode.type].pins.find(
+              const dstPin = getNodeMeta(dstNode, customICs).pins.find(
                 (p) => p.id === wire.toPinId
               );
               if (!srcPin || !dstPin) return null;
@@ -1643,6 +2219,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
               <NodeRenderer
                 key={node.id}
                 node={node}
+                customICs={customICs}
                 selected={selectedNodeId === node.id}
                 connectingFrom={
                   connectingFrom
@@ -1710,7 +2287,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
               <select
                 value={activePresetId}
                 onChange={(e) => handleLoadPreset(e.target.value)}
-                aria-label="Hazır Devre Seçimi"
+                aria-label={sim.presetAria}
                 className="bg-white/95 backdrop-blur border-2 border-slate-200 border-b-4 text-slate-700 text-[11px] sm:text-xs font-bold rounded-2xl px-2 sm:px-3 py-1.5 shadow-sm focus:outline-none focus:border-sky-400 cursor-pointer max-w-[126px] sm:max-w-none truncate min-h-[34px]"
               >
                 {presets.map((p) => (
@@ -1723,7 +2300,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
 
             {selectedNode && (
               <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-2xl bg-white/95 backdrop-blur border-2 border-sky-200 border-b-4 text-xs shadow-sm">
-                <span className="text-slate-500 font-semibold">Etiket:</span>
+                <span className="text-slate-500 font-semibold">{sim.labelPrefix}</span>
                 <input
                   type="text"
                   value={selectedNode.label}
@@ -1741,7 +2318,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                     type="button"
                     onClick={() => handleDeleteNode(selectedNode.id)}
                     className="text-rose-500 hover:text-rose-700 p-0.5 cursor-pointer"
-                    title="Seçili bileşeni sil"
+                    title={sim.deleteSelectedComp}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -1756,23 +2333,35 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                 className="flex items-center gap-1 px-2.5 py-1.5 rounded-2xl bg-rose-500 hover:bg-rose-600 border-2 border-rose-600 border-b-4 active:border-b-2 text-white text-[11px] sm:text-xs font-bold shadow-sm cursor-pointer min-h-[34px]"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span>Kabloyu Sil</span>
+                <span>{sim.deleteWire}</span>
               </button>
             )}
           </div>
 
-          {/* Floating Top-Right Pastel Pill Toolbar (Clock, Verify, Clear, Pan/Zoom) */}
+          {/* Floating Top-Right Pastel Pill Toolbar (Clock, Package IC, Verify, Clear, Pan/Zoom) */}
           <div className="absolute top-2.5 right-2.5 z-20 bg-white/95 backdrop-blur border-2 border-slate-200 border-b-4 rounded-2xl p-1 sm:p-1.5 shadow-sm flex flex-wrap items-center justify-end gap-1 sm:gap-1.5 max-w-[94%]">
             <button
               type="button"
               onClick={handleGlobalClockPulse}
-              title="Saat Darbesi Gönder"
+              title={sim.clockPulseTitle}
               className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-xl bg-amber-50 hover:bg-amber-100 border-2 border-amber-200 text-amber-800 text-[11px] font-extrabold transition-all whitespace-nowrap cursor-pointer min-h-[32px]"
             >
               <Play className="w-3 h-3 fill-amber-500 text-amber-600" />
-              <span className="sm:hidden">Darbe</span>
-              <span className="hidden sm:inline">Clock Darbesi</span>
+              <span className="sm:hidden">{sim.pulseShort}</span>
+              <span className="hidden sm:inline">{sim.clockPulse}</span>
             </button>
+
+            {mode === 'lab' && (
+              <button
+                type="button"
+                onClick={handleOpenPackageModal}
+                title={sim.customIC.packageBtnTitle}
+                className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-xl bg-violet-50 hover:bg-violet-100 border-2 border-violet-200 text-violet-800 text-[11px] font-extrabold transition-all whitespace-nowrap cursor-pointer min-h-[32px]"
+              >
+                <span className="sm:hidden">{sim.customIC.packageBtnShort}</span>
+                <span className="hidden sm:inline">{sim.customIC.packageBtn}</span>
+              </button>
+            )}
 
             {mode === 'challenge' && challenge && (
               <button
@@ -1781,20 +2370,20 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                 className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-xl bg-emerald-500 hover:bg-emerald-600 border-2 border-emerald-600 text-white text-[11px] font-extrabold transition-all whitespace-nowrap cursor-pointer min-h-[32px]"
               >
                 <Check className="w-3.5 h-3.5" />
-                <span className="sm:hidden">Doğrula</span>
-                <span className="hidden sm:inline">Devreyi Doğrula</span>
+                <span className="sm:hidden">{sim.verifyShort}</span>
+                <span className="hidden sm:inline">{sim.verifyCircuit}</span>
               </button>
             )}
 
             <button
               type="button"
               onClick={handleResetCanvas}
-              title={mode === 'challenge' ? 'Başlangıca Sıfırla' : 'Tuvali Temizle'}
-              aria-label={mode === 'challenge' ? 'Başlangıca Sıfırla' : 'Tuvali Temizle'}
+              title={mode === 'challenge' ? sim.resetToStart : sim.clearCanvas}
+              aria-label={mode === 'challenge' ? sim.resetToStart : sim.clearCanvas}
               className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-xl bg-rose-50 hover:bg-rose-100 border-2 border-rose-200 text-rose-700 text-[11px] font-bold transition-all whitespace-nowrap cursor-pointer min-h-[32px]"
             >
               <Trash2 className="w-3.5 h-3.5 sm:w-3 sm:h-3" />
-              <span className="hidden sm:inline">Temizle</span>
+              <span className="hidden sm:inline">{sim.clear}</span>
             </button>
 
             <span className="w-px h-5 bg-slate-200 mx-0.5 hidden sm:block" aria-hidden="true" />
@@ -1805,8 +2394,8 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                 type="button"
                 onClick={() => zoomAtClientPoint(zoom - 0.15)}
                 disabled={zoom <= MIN_ZOOM}
-                title="Uzaklaştır"
-                aria-label="Uzaklaştır"
+                title={sim.zoomOut}
+                aria-label={sim.zoomOut}
                 className="p-1.5 sm:p-1 rounded-xl border border-slate-200 bg-slate-50 hover:bg-sky-50 hover:border-sky-300 disabled:opacity-40 text-slate-700 cursor-pointer min-h-[32px]"
               >
                 <ZoomOut className="w-3.5 h-3.5" />
@@ -1815,7 +2404,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
               <button
                 type="button"
                 onClick={() => zoomAtClientPoint(1)}
-                title="Yakınlaştırmayı %100 yap"
+                title={sim.resetZoom100}
                 className="px-1.5 sm:px-2 py-1 rounded-xl border border-slate-200 bg-slate-50 hover:bg-sky-50 font-mono text-[10.5px] sm:text-[11px] font-extrabold text-slate-700 min-w-[38px] sm:min-w-[46px] text-center cursor-pointer min-h-[32px]"
               >
                 {Math.round(zoom * 100)}%
@@ -1825,8 +2414,8 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                 type="button"
                 onClick={() => zoomAtClientPoint(zoom + 0.15)}
                 disabled={zoom >= MAX_ZOOM}
-                title="Yakınlaştır"
-                aria-label="Yakınlaştır"
+                title={sim.zoomIn}
+                aria-label={sim.zoomIn}
                 className="p-1.5 sm:p-1 rounded-xl border border-slate-200 bg-slate-50 hover:bg-sky-50 hover:border-sky-300 disabled:opacity-40 text-slate-700 cursor-pointer min-h-[32px]"
               >
                 <ZoomIn className="w-3.5 h-3.5" />
@@ -1835,15 +2424,46 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
               <button
                 type="button"
                 onClick={() => centerNodesInViewport(nodes)}
-                title="Devreyi Ortala"
-                aria-label="Devreyi Ortala"
+                title={sim.centerCircuit}
+                aria-label={sim.centerCircuit}
                 className="flex items-center gap-1 px-2 py-1 rounded-xl border-2 border-sky-200 bg-sky-50 hover:bg-sky-100 text-sky-800 text-[11px] font-bold whitespace-nowrap cursor-pointer min-h-[32px]"
               >
                 <Crosshair className="w-3.5 h-3.5 sm:w-3 sm:h-3" />
-                <span className="hidden sm:inline">Ortala</span>
+                <span className="hidden sm:inline">{sim.center}</span>
               </button>
             </div>
           </div>
+
+          {/* Friendly Pastel Canvas Toast (Pin validation / Save / Load confirmations) */}
+          {canvasToast && (
+            <div
+              onPointerDown={(e) => e.stopPropagation()}
+              className={`absolute top-14 left-1/2 -translate-x-1/2 z-40 max-w-[92%] sm:max-w-md px-3.5 py-2.5 rounded-2xl border-2 border-b-4 shadow-lg flex items-center gap-2.5 text-xs font-bold ${
+                canvasToast.tone === 'warn'
+                  ? 'bg-amber-50 border-amber-300 text-amber-900'
+                  : canvasToast.tone === 'success'
+                    ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                    : 'bg-violet-50 border-violet-300 text-violet-900'
+              }`}
+            >
+              <span className="shrink-0 text-sm">
+                {canvasToast.tone === 'warn'
+                  ? '⚠️'
+                  : canvasToast.tone === 'success'
+                    ? '✨'
+                    : '🧩'}
+              </span>
+              <span className="flex-1 leading-snug">{canvasToast.message}</span>
+              <button
+                type="button"
+                onClick={() => setCanvasToast(null)}
+                className="p-1 rounded-lg hover:bg-black/5 shrink-0 cursor-pointer"
+                aria-label={sim.closeSelection}
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
 
           {/* Floating Selected-Component Touch/Click Action Bar */}
           {selectedNode && !draggingNode && !connectingFrom && (
@@ -1851,9 +2471,22 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
               onPointerDown={(e) => e.stopPropagation()}
               className="absolute top-14 left-1/2 -translate-x-1/2 z-30 max-w-[94%] bg-white/95 backdrop-blur border-2 border-sky-200 border-b-4 rounded-2xl px-2.5 py-1.5 shadow-md flex flex-wrap items-center justify-center gap-1.5"
             >
-              <span className="px-2 py-0.5 rounded-xl bg-sky-50 border border-sky-200 text-sky-900 font-display font-extrabold text-[11px] truncate max-w-[130px] sm:max-w-[180px]">
-                {COMPONENT_CATALOG[selectedNode.type].shortLabel} · {selectedNode.label}
+              <span className="px-2 py-0.5 rounded-xl bg-sky-50 border border-sky-200 text-sky-900 font-display font-extrabold text-[11px] truncate max-w-[140px] sm:max-w-[190px]">
+                {selectedNode.type === 'CUSTOM_IC'
+                  ? `🧩 ${selectedNode.label}`
+                  : `${COMPONENT_CATALOG[selectedNode.type].shortLabel} · ${selectedNode.label}`}
               </span>
+
+              {selectedNode.type === 'CUSTOM_IC' && mode === 'lab' && (
+                <button
+                  type="button"
+                  onClick={() => handleLoadInternalCircuit(selectedNode.id)}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-violet-50 hover:bg-violet-100 border-2 border-violet-200 text-violet-800 text-[11px] font-extrabold cursor-pointer min-h-[34px] whitespace-nowrap"
+                >
+                  <FolderOpen className="w-3.5 h-3.5 shrink-0" />
+                  <span>{sim.customIC.loadInternalCircuit}</span>
+                </button>
+              )}
 
               {canNodeSwap(selectedNode) && (
                 <button
@@ -1875,7 +2508,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                   className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-violet-50 hover:bg-violet-100 border-2 border-violet-200 text-violet-800 text-[11px] font-extrabold cursor-pointer min-h-[34px] whitespace-nowrap"
                 >
                   <ArrowLeftRight className="w-3.5 h-3.5 shrink-0" />
-                  <span>Tür / Boyut Değiştir</span>
+                  <span>{sim.swapGateOrSize}</span>
                 </button>
               )}
 
@@ -1886,7 +2519,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                   className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-rose-50 hover:bg-rose-100 border-2 border-rose-200 text-rose-700 text-[11px] font-extrabold cursor-pointer min-h-[34px] whitespace-nowrap"
                 >
                   <Trash2 className="w-3.5 h-3.5 shrink-0" />
-                  <span>Çıkar</span>
+                  <span>{sim.remove}</span>
                 </button>
               )}
 
@@ -1896,7 +2529,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                   setSelectedNodeId(null);
                   setContextMenu(null);
                 }}
-                aria-label="Seçimi Kapat"
+                aria-label={sim.closeSelection}
                 className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 cursor-pointer min-w-[32px] min-h-[32px] flex items-center justify-center"
               >
                 <X className="w-3.5 h-3.5" />
@@ -1908,14 +2541,12 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
           <div className="pointer-events-none absolute bottom-2.5 left-2.5 right-2.5 z-10 flex flex-wrap items-center justify-between gap-2">
             <div className="hidden md:inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/85 backdrop-blur border border-slate-200/80 text-[11px] font-medium text-slate-500">
               <Cable className="w-3.5 h-3.5 text-sky-500 shrink-0" />
-              <span>
-                Pinlerden sürükleyin veya dokun-bağla yapın · Sağ tık / Uzun basma: Kapı değiştir/sil · Boşluktan sürükle: Kaydır
-              </span>
+              <span>{sim.helpStrip}</span>
             </div>
 
             {connectingFrom && (
               <span className="mx-auto md:mx-0 px-3 py-1.5 rounded-2xl bg-sky-500 text-white text-[11px] font-bold shadow-md">
-                Bağlantı modu aktif — Hedef pine dokunun (İptal: boşluğa tıkla)
+                {sim.wiringModeActive}
               </span>
             )}
           </div>
@@ -1924,7 +2555,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
           {contextMenu && (() => {
             const ctxNode = nodes.find((n) => n.id === contextMenu.nodeId);
             if (!ctxNode) return null;
-            const ctxMeta = COMPONENT_CATALOG[ctxNode.type];
+            const ctxMeta = getNodeMeta(ctxNode, customICs);
             const isGateSwappable =
               TWO_INPUT_GATES.includes(ctxNode.type) ||
               THREE_INPUT_GATES.includes(ctxNode.type);
@@ -1959,26 +2590,49 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
               >
                 <div className="flex items-center justify-between gap-2 px-1.5 pb-1.5 border-b border-slate-100">
                   <span className="font-display font-extrabold text-xs text-slate-800 truncate">
-                    {ctxMeta.label} ({ctxNode.label})
+                    {ctxNode.type === 'CUSTOM_IC'
+                      ? `🧩 ${ctxNode.label}`
+                      : `${getCompLabel(ctxMeta)} (${ctxNode.label})`}
                   </span>
                   {ctxNode.locked && (
                     <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-lg shrink-0">
-                      <Lock className="w-3 h-3" /> Kilitli
+                      <Lock className="w-3 h-3" /> {sim.locked}
                     </span>
                   )}
                 </div>
+
+                {ctxNode.type === 'CUSTOM_IC' && (
+                  <div className="space-y-2">
+                    <div className="px-2 py-1 rounded-xl bg-violet-50 border border-violet-200 text-[11px] font-bold text-violet-800 text-center">
+                      {sim.customIC.pinSummary(
+                        ctxMeta.pins.filter((p) => p.direction === 'in').length,
+                        ctxMeta.pins.filter((p) => p.direction === 'out').length
+                      )}
+                    </div>
+                    {mode === 'lab' && (
+                      <button
+                        type="button"
+                        onClick={() => handleLoadInternalCircuit(ctxNode.id)}
+                        className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-2xl border-2 border-violet-200 bg-violet-50 hover:bg-violet-500 hover:border-violet-600 text-violet-800 hover:text-white text-xs font-extrabold transition-all cursor-pointer"
+                      >
+                        <FolderOpen className="w-3.5 h-3.5" />
+                        <span>{sim.customIC.loadInternalCircuit}</span>
+                      </button>
+                    )}
+                  </div>
+                )}
 
                 {!ctxNode.locked && isGateSwappable && (
                   <div className="space-y-2">
                     <div className="flex items-center gap-1.5 px-1 text-[11px] font-bold text-sky-700">
                       <ArrowLeftRight className="w-3.5 h-3.5" />
-                      <span>Kapı Türünü Değiştir</span>
+                      <span>{sim.swapGateType}</span>
                     </div>
 
                     {allowedTwo.length > 0 && (
                       <div className="space-y-1">
                         <div className="text-[10px] font-bold text-slate-400 px-1">
-                          2-Girişli Kapılar
+                          {CATEGORY_LABELS['2-Girişli Kapılar'][lang]}
                         </div>
                         <div className="grid grid-cols-3 gap-1">
                           {allowedTwo.map((gType) => {
@@ -2005,7 +2659,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                     {allowedThree.length > 0 && (
                       <div className="space-y-1">
                         <div className="text-[10px] font-bold text-slate-400 px-1">
-                          3-Girişli Kapılar
+                          {CATEGORY_LABELS['3-Girişli Kapılar'][lang]}
                         </div>
                         <div className="grid grid-cols-3 gap-1">
                           {allowedThree.map((gType) => {
@@ -2035,10 +2689,10 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-1.5 px-1 text-[11px] font-bold text-violet-700">
                       <ArrowLeftRight className="w-3.5 h-3.5" />
-                      <span>Boyut / Tür Değiştir</span>
+                      <span>{sim.swapSizeType}</span>
                     </div>
                     <div className="text-[10px] font-bold text-slate-400 px-1">
-                      {msiFamily.label} (Ortak kablolar korunur)
+                      {sim.msiSwapFamilies[msiFamily.familyKey]} {sim.sharedWiresKept}
                     </div>
                     <div
                       className={`grid gap-1 ${
@@ -2070,7 +2724,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-1.5 px-1 text-[11px] font-bold text-amber-700">
                       <ArrowLeftRight className="w-3.5 h-3.5" />
-                      <span>Kapı Türünü Değiştir</span>
+                      <span>{sim.swapGateType}</span>
                     </div>
                     <div className="grid grid-cols-2 gap-1.5">
                       {allowedFfs.map((ffType) => {
@@ -2098,7 +2752,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-1.5 px-1 text-[11px] font-bold text-emerald-700">
                       <ArrowLeftRight className="w-3.5 h-3.5" />
-                      <span>Giriş Türünü Değiştir</span>
+                      <span>{sim.swapInputType}</span>
                     </div>
                     <div className="grid grid-cols-2 gap-1.5">
                       {allowedInputs.map((inType) => {
@@ -2130,7 +2784,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>
-                    {ctxNode.locked ? 'Sabit Görev Bileşeni' : 'Devreden Çıkar'}
+                    {ctxNode.locked ? sim.lockedChallengeComp : sim.removeFromCircuit}
                   </span>
                 </button>
               </div>
@@ -2155,7 +2809,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                         : 'bg-white border-slate-200 text-slate-600'
                     }`}
                   >
-                    {tab.id}
+                    {sim.phoneTabs[tab.id]}
                   </button>
                 );
               })}
@@ -2167,33 +2821,54 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
               className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-xl border-2 border-amber-200 bg-amber-50 text-amber-800 text-[11px] font-display font-extrabold cursor-pointer min-h-[32px]"
             >
               <ChevronUp className="w-3.5 h-3.5" />
-              <span>Tüm Parçalar</span>
+              <span>{sim.allParts}</span>
             </button>
           </div>
 
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
-            {activePhoneTabItems.map((comp) => {
-              const accent = comp.subcategory
-                ? MSI_SUBCATEGORY_ACCENTS[comp.subcategory]
-                : CATEGORY_ACCENTS[comp.category];
-              return (
-                <button
-                  key={comp.type}
-                  type="button"
-                  onClick={() => handlePaletteClick(comp.type)}
-                  className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-2xl border-2 border-b-4 active:border-b-2 active:translate-y-0.5 transition-all cursor-pointer min-h-[42px] ${accent.itemBg} ${accent.itemBorder}`}
-                >
-                  <span
-                    className={`text-[10px] font-mono font-extrabold px-1.5 py-0.5 rounded-lg leading-tight ${accent.tag}`}
-                  >
-                    {comp.shortLabel}
-                  </span>
-                  <span className="text-[11px] font-bold text-slate-700 whitespace-nowrap">
-                    {comp.label}
-                  </span>
-                </button>
-              );
-            })}
+            {activePhoneTabIsCustom
+              ? customICs.map((ic) => {
+                  const accent = CUSTOM_IC_ACCENTS[ic.color];
+                  return (
+                    <button
+                      key={ic.id}
+                      type="button"
+                      onClick={() => handleCustomICClick(ic)}
+                      className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-2xl border-2 border-b-4 active:border-b-2 active:translate-y-0.5 transition-all cursor-pointer min-h-[42px] ${accent.itemBg} ${accent.itemBorder}`}
+                    >
+                      <span
+                        className={`text-[10px] font-mono font-extrabold px-1.5 py-0.5 rounded-lg leading-tight ${accent.tag}`}
+                      >
+                        🧩 IC
+                      </span>
+                      <span className="text-[11px] font-bold text-slate-700 whitespace-nowrap">
+                        {ic.name}
+                      </span>
+                    </button>
+                  );
+                })
+              : activePhoneTabItems.map((comp) => {
+                  const accent = comp.subcategory
+                    ? MSI_SUBCATEGORY_ACCENTS[comp.subcategory]
+                    : CATEGORY_ACCENTS[comp.category];
+                  return (
+                    <button
+                      key={comp.type}
+                      type="button"
+                      onClick={() => handlePaletteClick(comp.type)}
+                      className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-2xl border-2 border-b-4 active:border-b-2 active:translate-y-0.5 transition-all cursor-pointer min-h-[42px] ${accent.itemBg} ${accent.itemBorder}`}
+                    >
+                      <span
+                        className={`text-[10px] font-mono font-extrabold px-1.5 py-0.5 rounded-lg leading-tight ${accent.tag}`}
+                      >
+                        {comp.shortLabel}
+                      </span>
+                      <span className="text-[11px] font-bold text-slate-700 whitespace-nowrap">
+                        {getCompLabel(comp)}
+                      </span>
+                    </button>
+                  );
+                })}
           </div>
         </div>
 
@@ -2211,7 +2886,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                   <Cpu className="w-3.5 h-3.5" />
                 </span>
                 <span className="font-display font-extrabold text-xs text-slate-800 truncate">
-                  Parça Ekle · Tıkla ✨
+                  {sim.addPartTap}
                 </span>
               </div>
               <button
@@ -2220,36 +2895,84 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                 className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 text-[11px] font-bold cursor-pointer min-h-[36px]"
               >
                 <ChevronDown className="w-3.5 h-3.5" />
-                <span>Küçült</span>
+                <span>{sim.minimize}</span>
               </button>
             </div>
 
             <div className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain pastel-scrollbar p-3 space-y-3">
+              {mode === 'lab' && customICs.length > 0 && (
+                <div className="space-y-1.5">
+                  <div className="text-[11px] font-display font-extrabold px-1 text-violet-700">
+                    {sim.customIC.paletteSectionTitle}
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {customICs.map((ic) => {
+                      const accent = CUSTOM_IC_ACCENTS[ic.color];
+                      return (
+                        <div key={ic.id} className="relative">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleCustomICClick(ic);
+                              setPhoneSheetExpanded(false);
+                            }}
+                            className={`w-full rounded-2xl border-2 border-b-4 active:border-b-2 px-2 py-2 flex flex-col items-center justify-center text-center cursor-pointer min-h-[54px] ${accent.itemBg} ${accent.itemBorder}`}
+                          >
+                            <span
+                              className={`text-[10px] font-mono font-extrabold px-1.5 py-0.5 rounded-lg ${accent.tag}`}
+                            >
+                              🧩 IC
+                            </span>
+                            <span className="text-[10.5px] font-bold text-slate-700 truncate w-full mt-1">
+                              {ic.name}
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeCustomIC(ic.id);
+                            }}
+                            aria-label={sim.customIC.deleteCustomIc}
+                            className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-white border border-rose-200 text-rose-500 flex items-center justify-center shadow-xs cursor-pointer"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {COMPONENT_CATEGORIES.map((category) => {
                 const items = Object.values(COMPONENT_CATALOG).filter((item) => {
+                  if (item.type === 'CUSTOM_IC') return false;
                   if (item.category !== category) return false;
                   if (allowedSet && !allowedSet.has(item.type)) return false;
                   return true;
                 });
                 if (items.length === 0) return null;
                 const style = CATEGORY_ACCENTS[category];
+                const categoryLabel = CATEGORY_LABELS[category][lang];
 
                 if (category === 'MSI Bloklar') {
                   return (
                     <div key={category} className="space-y-2">
                       <div className={`text-[11px] font-display font-extrabold px-1 ${style.badge}`}>
-                        {category}
+                        {categoryLabel}
                       </div>
                       {MSI_SUBCATEGORIES.map((sub) => {
                         const subItems = items.filter((item) => item.subcategory === sub);
                         if (subItems.length === 0) return null;
                         const subAccent = MSI_SUBCATEGORY_ACCENTS[sub];
+                        const subLabel = MSI_SUBCATEGORY_LABELS[sub][lang];
                         return (
                           <div key={sub} className="space-y-1.5">
                             <div
                               className={`px-2 py-1 rounded-xl border text-[10.5px] font-display font-extrabold ${subAccent.header}`}
                             >
-                              {sub}
+                              {subLabel}
                             </div>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                               {subItems.map((comp) => (
@@ -2268,7 +2991,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                                     {comp.shortLabel}
                                   </span>
                                   <span className="text-[10.5px] font-bold text-slate-700 truncate w-full mt-1">
-                                    {comp.label}
+                                    {getCompLabel(comp)}
                                   </span>
                                 </button>
                               ))}
@@ -2283,7 +3006,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                 return (
                   <div key={category} className="space-y-1.5">
                     <div className={`text-[11px] font-display font-extrabold px-1 ${style.badge}`}>
-                      {category}
+                      {categoryLabel}
                     </div>
                     <div className="grid grid-cols-3 gap-1.5">
                       {items.map((comp) => (
@@ -2302,7 +3025,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                             {comp.shortLabel}
                           </span>
                           <span className="text-[10px] font-bold text-slate-700 truncate w-full mt-1">
-                            {comp.label}
+                            {getCompLabel(comp)}
                           </span>
                         </button>
                       ))}
@@ -2311,6 +3034,155 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {/* Cute Custom IC Packaging Modal */}
+        {packageModal && (
+          <div
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => setPackageModal(null)}
+            className="fixed inset-0 z-50 bg-slate-900/35 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
+          >
+            <form
+              onSubmit={handleConfirmPackageIC}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md rounded-3xl border-2 border-violet-200 border-b-4 bg-[#FFFDF9] shadow-2xl overflow-hidden"
+            >
+              {/* Modal Header */}
+              <div className="px-4 py-3.5 border-b-2 border-slate-100 bg-gradient-to-r from-violet-50 via-sky-50 to-emerald-50 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="w-8 h-8 rounded-2xl bg-violet-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <Puzzle className="w-4 h-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <h3 className="font-display font-extrabold text-sm text-slate-800 truncate">
+                      {sim.customIC.modalTitle}
+                    </h3>
+                    <p className="text-[11px] text-slate-500 font-medium leading-snug">
+                      {sim.customIC.modalSubtitle}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPackageModal(null)}
+                  className="p-1.5 rounded-xl bg-white/90 border border-slate-200 text-slate-500 hover:text-slate-800 cursor-pointer shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="p-4 space-y-4">
+                {/* Block Name Input */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-display font-extrabold text-slate-700">
+                    {sim.customIC.nameLabel}
+                  </label>
+                  <input
+                    type="text"
+                    autoFocus
+                    maxLength={24}
+                    value={packageModal.name}
+                    onChange={(e) =>
+                      setPackageModal((prev) =>
+                        prev ? { ...prev, name: e.target.value } : null
+                      )
+                    }
+                    placeholder={sim.customIC.namePlaceholder}
+                    className="w-full px-3.5 py-2.5 rounded-2xl border-2 border-slate-200 focus:border-violet-400 bg-white text-sm font-bold text-slate-800 focus:outline-none"
+                  />
+                </div>
+
+                {/* Pastel Color Picker */}
+                <div className="space-y-1.5">
+                  <div className="text-xs font-display font-extrabold text-slate-700">
+                    {sim.customIC.colorLabel}
+                  </div>
+                  <div className="grid grid-cols-5 gap-2">
+                    {CUSTOM_IC_COLORS.map((colorKey) => {
+                      const active = packageModal.color === colorKey;
+                      const accent = CUSTOM_IC_ACCENTS[colorKey];
+                      return (
+                        <button
+                          key={colorKey}
+                          type="button"
+                          onClick={() =>
+                            setPackageModal((prev) =>
+                              prev ? { ...prev, color: colorKey } : null
+                            )
+                          }
+                          className={`flex flex-col items-center gap-1 py-2 px-1 rounded-2xl border-2 transition-all cursor-pointer ${
+                            active
+                              ? `${accent.itemBg} ${accent.itemBorder} ring-2 ${accent.swatchRing}`
+                              : 'bg-white border-slate-200 hover:border-slate-300'
+                          }`}
+                        >
+                          <span
+                            className={`w-5 h-5 rounded-full border-2 ${accent.swatch}`}
+                          />
+                          <span className="text-[10.5px] font-bold text-slate-700">
+                            {sim.customIC.colors[colorKey]}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Detected Pins Preview (Left Input & Right Output) */}
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="rounded-2xl border-2 border-emerald-200 bg-emerald-50/60 p-2.5 space-y-1.5">
+                    <div className="text-[10.5px] font-display font-extrabold text-emerald-800">
+                      {sim.customIC.leftPinsTitle}
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {packageModal.inputPins.map((pin) => (
+                        <span
+                          key={pin.id}
+                          className="px-2 py-0.5 rounded-lg bg-white border border-emerald-200 font-mono text-[11px] font-bold text-emerald-800"
+                        >
+                          {pin.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border-2 border-sky-200 bg-sky-50/60 p-2.5 space-y-1.5">
+                    <div className="text-[10.5px] font-display font-extrabold text-sky-800">
+                      {sim.customIC.rightPinsTitle}
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {packageModal.outputPins.map((pin) => (
+                        <span
+                          key={pin.id}
+                          className="px-2 py-0.5 rounded-lg bg-white border border-sky-200 font-mono text-[11px] font-bold text-sky-800"
+                        >
+                          {pin.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer Actions */}
+              <div className="px-4 py-3 border-t-2 border-slate-100 bg-slate-50/70 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPackageModal(null)}
+                  className="px-3.5 py-2 rounded-2xl border-2 border-slate-200 bg-white hover:bg-slate-100 text-xs font-bold text-slate-600 cursor-pointer"
+                >
+                  {sim.customIC.cancelBtn}
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-2xl border-2 border-b-4 border-violet-600 bg-violet-500 hover:bg-violet-600 active:border-b-2 text-white text-xs font-extrabold shadow-xs cursor-pointer"
+                >
+                  {sim.customIC.saveBtn}
+                </button>
+              </div>
+            </form>
           </div>
         )}
       </div>
@@ -2336,14 +3208,14 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                   <>
                     <Sparkles className="w-5 h-5 text-emerald-600 shrink-0" />
                     <span className="text-sm font-bold">
-                      Devre Kusursuz Çalışıyor! Tüm {verification.rows.length} doğruluk tablosu satırını tam puanla geçtin.
+                      {sim.verifyPassed(verification.rows.length)}
                     </span>
                   </>
                 ) : (
                   <>
                     <XCircle className="w-5 h-5 text-rose-500 shrink-0" />
                     <span className="text-sm font-bold">
-                      Neredeyse tamam! Bazı kombinasyonlar beklenen çıkışla uyuşmuyor, aşağıdaki tabloyu kontrol et.
+                      {sim.verifyFailed}
                     </span>
                   </>
                 )}
@@ -2355,7 +3227,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                     <tr className="border-b-2 border-slate-100 bg-slate-50 text-slate-500">
                       {challenge?.sequentialTest && (
                         <th className="py-2 px-3 text-left text-amber-700 font-bold">
-                          Saat Darbesi
+                          {sim.clockPulseCol}
                         </th>
                       )}
                       {challenge?.inputs.map((inp) => (
@@ -2365,15 +3237,15 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                       ))}
                       {challenge?.outputs.map((out) => (
                         <th key={`exp_${out}`} className="py-2 px-3 text-left text-sky-700 font-bold">
-                          Beklenen {out}
+                          {sim.expectedCol} {out}
                         </th>
                       ))}
                       {challenge?.outputs.map((out) => (
                         <th key={`act_${out}`} className="py-2 px-3 text-left text-slate-700 font-bold">
-                          Devre {out}
+                          {sim.circuitCol} {out}
                         </th>
                       ))}
-                      <th className="py-2 px-3 text-left font-bold">Durum</th>
+                      <th className="py-2 px-3 text-left font-bold">{sim.statusCol}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2386,7 +3258,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                       >
                         {challenge?.sequentialTest && (
                           <td className="py-2 px-3 text-amber-700 font-bold">
-                            ↑ Darbe #{idx + 1}
+                            ↑ {sim.pulseRow} #{idx + 1}
                           </td>
                         )}
                         {challenge?.inputs.map((inp) => (
@@ -2414,11 +3286,11 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                         <td className="py-2 px-3">
                           {row.match ? (
                             <span className="inline-flex items-center gap-1 text-emerald-700 font-bold">
-                              <CheckCircle2 className="w-3.5 h-3.5" /> DOĞRU
+                              <CheckCircle2 className="w-3.5 h-3.5" /> {sim.passBadge}
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 text-rose-600 font-bold">
-                              <XCircle className="w-3.5 h-3.5" /> HATALI
+                              <XCircle className="w-3.5 h-3.5" /> {sim.failBadge}
                             </span>
                           )}
                         </td>

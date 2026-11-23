@@ -381,3 +381,5 @@ export const TruthTableBuilder: React.FC<TruthTableBuilderProps> = ({
     </div>
   );
 };
+
+export default TruthTableBuilder;

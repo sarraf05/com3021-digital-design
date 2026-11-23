@@ -3306,3 +3306,5 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
     </div>
   );
 };
+
+export default CircuitSimulator;

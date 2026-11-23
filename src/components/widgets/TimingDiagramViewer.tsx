@@ -535,3 +535,5 @@ export const TimingDiagramViewer: React.FC<TimingDiagramViewerProps> = ({
     </div>
   );
 };
+
+export default TimingDiagramViewer;

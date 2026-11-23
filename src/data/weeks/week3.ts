@@ -128,6 +128,10 @@ export const week3: WeekModule = {
           ],
         },
       ],
+      summaryRule: {
+        tr: 'DeMorgan Yasaları tümleyen operatörünü parantez içine dağıtırken AND ↔ OR dönüşümü yapar: (x + y)\' = x\' · y\' ve (x · y)\' = x\' + y\'. Şemalarda çıkış baloncuğunu girişlere iterken kapıyı da tersine çevirmek (Bubble Pushing) eşdeğerliği korur.',
+        en: 'DeMorgan\'s Laws distribute complementation while toggling AND ↔ OR: (x + y)\' = x\' · y\' and (x · y)\' = x\' + y\'. In schematics, pushing a bubble across a gate body while swapping AND ↔ OR preserves exact logic.',
+      },
       examTip: {
         tr: 'DeMorgan uygularken en sık yapılan hata tümleyenin parantez içindeki terimler arasında · ve + işaretini değiştirmeyi unutmaktır. Her zaman operatörü de çevirin!',
         en: 'The most common DeMorgan mistake is forgetting to flip · ↔ + between terms inside parentheses. Always invert both the literals and the operator!',

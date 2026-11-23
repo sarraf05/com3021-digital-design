@@ -96,7 +96,12 @@ export function usePWA(): PWAStatus {
         if (cancelled) return;
         if (reg.active?.state === 'activated') {
           if ('caches' in window) {
-            const hasCache = await caches.has('com3021-offline-v1');
+            const keys = await caches.keys();
+            const hasCache = keys.some(
+              (key) =>
+                key.startsWith('com3021-offline-') ||
+                key.startsWith('workbox-precache-')
+            );
             if (!cancelled && hasCache) {
               setIsOfflineReady(true);
               return;

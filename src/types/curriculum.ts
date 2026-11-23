@@ -55,6 +55,7 @@ export interface VisualSection {
   diagrams?: VisualDiagramData[];
   widget?: WidgetType;
   widgetConfig?: WidgetConfig;
+  summaryRule?: LocalizedText;
   examTip?: LocalizedText;
 }
 

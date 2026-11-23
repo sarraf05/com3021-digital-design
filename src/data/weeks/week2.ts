@@ -166,6 +166,10 @@ export const week2: WeekModule = {
           ],
         },
       ],
+      summaryRule: {
+        tr: '2\'s Complement sisteminde çıkarma işlemi M - N = M + (2ⁿ - N) toplama işlemine dönüşür: Elde (Carry) = 1 ise atılır ve kalan sonuç pozitif (+); Elde = 0 ise toplamın tekrar 2\'s Complement\'i alınıp başına (-) işareti konur.',
+        en: 'In 2\'s Complement arithmetic, subtraction becomes addition: M - N = M + (2ⁿ - N). If End Carry = 1, discard it and read the positive result; if End Carry = 0, take the 2\'s Complement of the sum and attach a minus (-) sign.',
+      },
       examTip: {
         tr: 'Overflow (Taşma) yalnızca aynı işaretli iki sayı toplandığında (Pozitif + Pozitif veya Negatif + Negatif) meydana gelebilir. Zıt işaretli iki sayının toplamında asla Overflow oluşmaz!',
         en: 'Overflow can ONLY occur when adding two numbers of the SAME sign (Positive + Positive or Negative + Negative). Adding two opposite-signed numbers never overflows!',

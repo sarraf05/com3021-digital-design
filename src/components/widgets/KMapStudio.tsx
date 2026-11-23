@@ -720,3 +720,5 @@ export const KMapStudio: React.FC<KMapStudioProps> = ({ config, studioMode = fal
     </div>
   );
 };
+
+export default KMapStudio;

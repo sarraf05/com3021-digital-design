@@ -1,4 +1,4 @@
-const CACHE_NAME = 'com3021-offline-v1';
+const CACHE_NAME = 'com3021-offline-v2';
 
 const CORE_PRECACHE_URLS = [
   '/',
@@ -25,6 +25,33 @@ function isCacheableResponse(response) {
   return response.status === 200 || response.type === 'opaque';
 }
 
+function isViteDevAsset(url) {
+  if (url.origin !== self.location.origin) return false;
+  const pathname = url.pathname;
+  if (
+    pathname === '/sw.js' ||
+    pathname.startsWith('/@vite') ||
+    pathname.startsWith('/@fs/') ||
+    pathname.startsWith('/__vite_ping') ||
+    pathname.startsWith('/@react-refresh') ||
+    pathname.startsWith('/src/') ||
+    pathname.startsWith('/node_modules/')
+  ) {
+    return true;
+  }
+  if (/\.(ts|tsx|jsx)(\?|$)/i.test(pathname)) {
+    return true;
+  }
+  if (
+    url.searchParams.has('v') ||
+    url.searchParams.has('t') ||
+    url.searchParams.has('import')
+  ) {
+    return true;
+  }
+  return false;
+}
+
 function shouldHandleRequest(request) {
   if (request.method !== 'GET') return false;
 
@@ -45,14 +72,8 @@ function shouldHandleRequest(request) {
     return false;
   }
 
-  // Never serve stale sw.js or interfere with Vite dev HMR endpoints
-  if (
-    url.origin === self.location.origin &&
-    (url.pathname === '/sw.js' ||
-      url.pathname.startsWith('/@vite') ||
-      url.pathname.startsWith('/__vite_ping') ||
-      url.pathname.startsWith('/@react-refresh'))
-  ) {
+  // Never serve stale sw.js or interfere with Vite dev modules / HMR endpoints
+  if (isViteDevAsset(url)) {
     return false;
   }
 
@@ -116,7 +137,7 @@ self.addEventListener('activate', (event) => {
       const keys = await caches.keys();
       await Promise.all(
         keys
-          .filter((key) => key !== CACHE_NAME)
+          .filter((key) => key !== CACHE_NAME && key !== 'dd-offline-book-v1')
           .map((oldKey) => caches.delete(oldKey))
       );
       await self.clients.claim();
@@ -147,12 +168,7 @@ self.addEventListener('message', (event) => {
             const parsed = new URL(rawUrl, self.location.origin);
             if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
             if (parsed.pathname.toLowerCase().endsWith('.pdf')) return false;
-            if (
-              parsed.origin === self.location.origin &&
-              (parsed.pathname === '/sw.js' ||
-                parsed.pathname.startsWith('/@vite') ||
-                parsed.pathname.startsWith('/__vite_ping'))
-            ) {
+            if (isViteDevAsset(parsed)) {
               return false;
             }
             const isAllowedOrigin =

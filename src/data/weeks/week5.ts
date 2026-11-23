@@ -71,6 +71,10 @@ export const week5: WeekModule = {
         variables: 4,
         initialMinterms: [0, 1, 2, 4, 5, 6, 8, 9, 12, 13, 14],
       },
+      summaryRule: {
+        tr: 'K-Map yalnızca 2ⁿ boyutlu (1, 2, 4, 8, 16) dikdörtgen blokları birleştirir; n değişkenli bir haritada 2ᵏ boyutlu her grup tam olarak k değişkeni eler. Önce Essential Prime Implicant (EPI) gruplarını seçmek minimum çözümü garanti eder.',
+        en: 'A K-Map combines only power-of-two (1, 2, 4, 8, 16) rectangular blocks; each 2ᵏ-cell group eliminates exactly k variables. Selecting Essential Prime Implicants (EPIs) first guarantees a minimal cover.',
+      },
       examTip: {
         tr: '4 değişkenli K-Map\'te 3. satırın (AB=11 → m₁₂..m₁₅) 4. satırdan (AB=10 → m₈..m₁₁) ÖNCE geldiğini asla unutmayın! İndeks atlamasını (0,1,3,2 ve 4,5,7,6 ve 12,13,15,14 ve 8,9,11,10) el alışkanlığı haline getirin.',
         en: 'Never forget that row 3 (AB=11 → m₁₂..m₁₅) comes BEFORE row 4 (AB=10 → m₈..m₁₁) in a 4-variable K-Map! Train yourself to jump indices automatically: (0,1,3,2; 4,5,7,6; 12,13,15,14; 8,9,11,10).',

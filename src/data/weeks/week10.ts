@@ -176,6 +176,10 @@ export const week10: WeekModule = {
         variables: 4,
         initialMinterms: [1, 3, 4, 11, 12, 13, 14, 15],
       },
+      summaryRule: {
+        tr: 'n değişkenli herhangi bir Boole fonksiyonu 2ⁿ⁻¹ × 1 MUX ile sentezlenebilir: n-1 değişken Select pinlerine bağlanır; son değişkenin (ör. D) çift/tek minterm çiftine göre her veri girişi 0, 1, D veya D\' olarak atanır.',
+        en: 'Any n-variable Boolean function can be implemented with a 2ⁿ⁻¹ × 1 MUX: connect n-1 variables to the Select lines and wire each data input to 0, 1, D, or D\' from its paired even/odd minterms.',
+      },
       examTip: {
         tr: 'Eğer seçme uçlarına en yüksek bitler (A, B, C) değil de örneğin (B, C, D) bağlanırsa tablonun satırları A\' ve A olarak değişir (A\' = 0..7, A = 8..15)! Her zaman hangi değişkenin seçici olmadığına dikkat edin.',
         en: 'If the select lines are connected to (B, C, D) instead of the MSBs (A, B, C), the table rows become A\' (0..7) and A (8..15)! Always check which variable is NOT on the select lines.',

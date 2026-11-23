@@ -81,6 +81,10 @@ export const week13: WeekModule = {
           ],
         },
       ],
+      summaryRule: {
+        tr: 'Mano 6 Adımlı Sentez Özeti: Durum Diyagramı → State Reduction → İkili Kodlama (⌈log₂ M⌉ Flip-Flop) → Uyarım Tablosu (Excitation Table) → Her FF girişi ve çıkış için K-Map → Ortak Clock\'lu Devre.',
+        en: 'Mano 6-Step Synthesis Summary: State Diagram → State Reduction → Binary State Assignment (⌈log₂ M⌉ Flip-Flops) → Excitation Table → K-Maps for each FF input & output → Common-Clock Schematic.',
+      },
       examTip: {
         tr: 'Durum sayısı 2ⁿ\'den küçükse (örneğin 3 veya 5 durum), kullanılmayan ikili kodlar (11 veya 101–111) için K-Map\'e Don\'t-Care (X) yazılabilir; ancak devrenin kendi kendini düzeltmesi (Self-Correcting) isteniyorsa bu durumlar başlangıç durumuna yönlendirilmelidir!',
         en: 'When the number of states is less than 2ⁿ (e.g., 3 or 5 states), unused binary codes (11 or 101–111) may be marked Don\'t-Care (X) on K-Maps; however, for a Self-Correcting FSM, explicitly route unused states back to the initial state!',

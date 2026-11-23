@@ -81,6 +81,10 @@ export const week14: WeekModule = {
           ],
         },
       ],
+      summaryRule: {
+        tr: 'Universal Shift Register mod seçimi (S₁S₀): 00 (Tut / Hold), 01 (Sağa Kaydır / ÷2), 10 (Sola Kaydır / ×2), 11 (Paralel Yükle). Sayaçlarda ise Ring Counter n FF ile n durum; Johnson Counter Q\'ₙ₋₁ geri beslemesiyle 2n durum üretir.',
+        en: 'Universal Shift Register modes (S₁S₀): 00 (Hold), 01 (Shift Right / ÷2), 10 (Shift Left / ×2), 11 (Parallel Load). For counters, Ring Counter yields n states with n FFs while Johnson Counter yields 2n states via Q\'ₙ₋₁ feedback.',
+      },
       examTip: {
         tr: 'Shift Right işleminde MSB (sol uç) yerine yeni gelen seri bit girer, LSB (sağ uç) dışarı atılır — bu işlem işaretsiz bir sayıyı 2\'ye bölmeye (÷ 2) eşdeğerdir! Shift Left ise 2 ile çarpar (× 2).',
         en: 'In a Shift Right operation, a new serial bit enters at the MSB (left) and the LSB (right) shifts out—which corresponds to dividing an unsigned binary number by 2 (÷ 2)! Shift Left multiplies by 2 (× 2).',

@@ -145,6 +145,10 @@ export const week8: WeekModule = {
           ],
         },
       ],
+      summaryRule: {
+        tr: 'Vize Özeti: Dualite yalnızca (· ↔ +) ve (0 ↔ 1) değiştirir (değişken terslenmez); Signed Overflow V = C_in ⊕ C_out yalnızca aynı işaretli toplamalarda oluşur; K-Map\'te 1\'ler SOP\'u, 0\'lar F\' (POS için DeMorgan gerekir) verir.',
+        en: 'Midterm Rule: Duality swaps only (· ↔ +) and (0 ↔ 1) without complementing variables; Signed Overflow V = C_in ⊕ C_out occurs only on same-sign addition; grouping 1s yields SOP while grouping 0s yields F\' (requiring DeMorgan for POS).',
+      },
       examTip: {
         tr: 'Vize kağıdında cebirsel sadeleştirme yaptıktan sonra her zaman 3 veya 4 değişkenli küçük bir K-Map çizerek bulduğunuz sonucun gerçekten minimum olup olmadığını 30 saniyede doğrulayabilirsiniz.',
         en: 'After performing algebraic simplification on an exam paper, you can always sketch a quick 3- or 4-variable K-Map to verify in 30 seconds whether your result is truly minimal.',

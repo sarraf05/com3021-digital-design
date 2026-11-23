@@ -821,3 +821,5 @@ export const BaseComplementVisualizer: React.FC<BaseComplementVisualizerProps> =
     </div>
   );
 };
+
+export default BaseComplementVisualizer;

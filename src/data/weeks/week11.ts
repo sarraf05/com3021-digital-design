@@ -94,6 +94,10 @@ export const week11: WeekModule = {
           ],
         },
       ],
+      summaryRule: {
+        tr: 'Üç Temel Flip-Flop Karakteristik Denklemi: D FF için Q(t+1) = D; JK FF için Q(t+1) = J·Q\' + K\'·Q; T FF için Q(t+1) = T ⊕ Q. JK FF\'nin J=K=1 durumu mevcut çıkışı tersleyerek SR Latch\'teki yasak durumu ortadan kaldırır.',
+        en: 'Three Core Flip-Flop Characteristic Equations: D FF has Q(t+1) = D; JK FF has Q(t+1) = J·Q\' + K\'·Q; T FF has Q(t+1) = T ⊕ Q. JK\'s J=K=1 input toggles Q, eliminating the SR Latch forbidden state.',
+      },
       examTip: {
         tr: 'Latch ile Flip-Flop arasındaki temel fark şudur: Latch, Clock/Enable seviyesi 1 olduğu sürece sürekli değişebilir; Flip-Flop ise yalnızca Clock kenarının (↑ veya ↓) yükseldiği/düştüğü anlık anda girişini örnekler!',
         en: 'The core difference between a Latch and a Flip-Flop is timing: a Latch responds continuously while Clock/Enable is high, whereas a Flip-Flop samples its input only at the instant of a Clock edge (↑ or ↓)!',

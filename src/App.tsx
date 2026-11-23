@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -18,6 +18,7 @@ import {
   LayoutList,
   Check,
   BookMarked,
+  Loader2,
   type LucideIcon,
 } from 'lucide-react';
 import { WEEKS } from './data/weeks';
@@ -28,9 +29,12 @@ import { usePWA } from './hooks/usePWA';
 import { t, UI_STRINGS } from './i18n/translations';
 import { VisualSectionCard } from './components/curriculum/VisualSectionCard';
 import { QuestionCard } from './components/curriculum/QuestionCard';
-import { CircuitSimulator } from './components/simulator/CircuitSimulator';
+import { ErrorBoundary } from './components/curriculum/ErrorBoundary';
 import { WidgetRenderer } from './components/widgets/WidgetRenderer';
-import { BookViewer } from './components/book/BookViewer';
+
+const CircuitSimulator = lazy(() => import('./components/simulator/CircuitSimulator'));
+
+const BookViewer = lazy(() => import('./components/book/BookViewer'));
 
 const WIDGET_TABS: {
   id: WidgetType;
@@ -1169,12 +1173,42 @@ export default function App() {
 
           {activeView === 'simulator' && (
             <div className="h-full w-full overflow-hidden flex flex-col p-1.5 sm:p-2.5 lg:p-3">
-              <CircuitSimulator mode="lab" />
+              <ErrorBoundary>
+                <Suspense
+                  fallback={
+                    <div className="h-full w-full rounded-3xl border-2 border-emerald-200 bg-white/90 flex flex-col items-center justify-center gap-3 p-6 text-center">
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-50 border-2 border-emerald-200 flex items-center justify-center text-emerald-600">
+                        <Loader2 className="w-6 h-6 animate-spin" />
+                      </div>
+                      <p className="font-display text-sm font-extrabold text-slate-700">
+                        {ui.pwa.loadingSimulator}
+                      </p>
+                    </div>
+                  }
+                >
+                  <CircuitSimulator mode="lab" />
+                </Suspense>
+              </ErrorBoundary>
             </div>
           )}
 
           {activeView === 'book' && (
-            <BookViewer currentPage={bookPage} onPageChange={setBookPage} />
+            <ErrorBoundary>
+              <Suspense
+                fallback={
+                  <div className="w-full h-[calc(100dvh-76px)] p-3 flex items-center justify-center">
+                    <div className="rounded-3xl border-2 border-amber-200 bg-white/95 px-6 py-5 shadow-sm flex items-center gap-3">
+                      <Loader2 className="w-5 h-5 animate-spin text-amber-600 shrink-0" />
+                      <span className="font-display text-sm font-extrabold text-slate-700">
+                        {ui.pwa.loadingBook}
+                      </span>
+                    </div>
+                  </div>
+                }
+              >
+                <BookViewer currentPage={bookPage} onPageChange={setBookPage} />
+              </Suspense>
+            </ErrorBoundary>
           )}
         </main>
       </div>

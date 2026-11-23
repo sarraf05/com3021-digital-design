@@ -81,6 +81,10 @@ export const week4: WeekModule = {
         variables: 3,
         initialMinterms: [0, 2, 5, 6],
       },
+      summaryRule: {
+        tr: 'Bir fonksiyonun Sum of Minterms (Σm) ve Product of Maxterms (ΠM) index kümeleri {0, 1, ..., 2ⁿ - 1} evrensel kümesini ikiye böler. Her i satırı için Mᵢ = (mᵢ)\' geçerlidir ve F\'nin Σm\'inde olmayan indeksler F\'nin ΠM\'ini oluşturur.',
+        en: 'A function\'s Sum of Minterms (Σm) and Product of Maxterms (ΠM) partition the universal set {0, 1, ..., 2ⁿ - 1}. For every row i, Mᵢ = (mᵢ)\', and every index absent from Σm belongs directly to ΠM.',
+      },
       examTip: {
         tr: 'Minterm\'de 1 olan değişken düz, 0 olan ters yazılır; Maxterm\'de ise tam tersi olarak 0 olan düz, 1 olan ters yazılır!',
         en: 'In a Minterm, 1 means unprimed (x) and 0 means primed (x\'); in a Maxterm, it is the exact opposite: 0 means unprimed (x) and 1 means primed (x\')!',

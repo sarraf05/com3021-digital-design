@@ -413,3 +413,5 @@ export const StateMachineExplorer: React.FC<StateMachineExplorerProps> = ({
     </div>
   );
 };
+
+export default StateMachineExplorer;

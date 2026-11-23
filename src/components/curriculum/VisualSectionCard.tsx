@@ -1,13 +1,34 @@
 import React, { useEffect, useState } from 'react';
-import { Lightbulb, Check, ChevronDown } from 'lucide-react';
+import {
+  AlertTriangle,
+  BookmarkCheck,
+  Check,
+  ChevronDown,
+  Lightbulb,
+} from 'lucide-react';
 import type { VisualSection } from '../../types/curriculum';
 import { useSession } from '../../context/SessionContext';
 import { t, UI_STRINGS } from '../../i18n/translations';
 import { WidgetRenderer } from '../widgets/WidgetRenderer';
+import { FormattedInline, FormattedProse } from './FormattedText';
 
 interface VisualSectionCardProps {
   section: VisualSection;
   focusMode?: boolean;
+}
+
+function splitKeyPointLead(text: string): { heading: string | null; body: string } {
+  const colonIdx = text.indexOf(':');
+  if (colonIdx > 1 && colonIdx <= 55) {
+    const candidate = text.slice(0, colonIdx).trim();
+    if (!/[=<>⊕⊙→]/.test(candidate)) {
+      return {
+        heading: `${candidate}:`,
+        body: text.slice(colonIdx + 1).trimStart(),
+      };
+    }
+  }
+  return { heading: null, body: text };
 }
 
 export const VisualSectionCard: React.FC<VisualSectionCardProps> = ({
@@ -36,36 +57,57 @@ export const VisualSectionCard: React.FC<VisualSectionCardProps> = ({
           : 'p-4 md:p-6 lg:p-7 space-y-4 md:space-y-5'
       }`}
     >
-      <div className="space-y-2.5 min-w-0">
+      <div className="space-y-3 min-w-0">
         <h3
-          className={`font-display font-extrabold text-slate-800 break-words ${
+          className={`font-display font-extrabold text-slate-900 break-words ${
             focusMode ? 'text-xl sm:text-2xl' : 'text-lg sm:text-xl'
           }`}
         >
           {t(section.title, lang)}
         </h3>
-        <p
-          className={`text-slate-600 max-w-4xl whitespace-pre-line break-words ${
-            focusMode
-              ? 'text-sm sm:text-base leading-[1.75]'
-              : 'text-sm sm:text-[15px] leading-relaxed'
-          }`}
-        >
-          {t(section.explanation, lang)}
-        </p>
+        <FormattedProse text={t(section.explanation, lang)} focusMode={focusMode} />
       </div>
 
       {section.keyPoints && section.keyPoints.length > 0 && (
         <ul className="space-y-2.5 pt-1">
-          {section.keyPoints.map((pt, idx) => (
-            <li key={idx} className="flex items-start gap-2.5 text-sm text-slate-700 font-medium">
-              <span className="w-5 h-5 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
-                <Check className="w-3.5 h-3.5 stroke-[2.8]" />
-              </span>
-              <span>{t(pt, lang)}</span>
-            </li>
-          ))}
+          {section.keyPoints.map((pt, idx) => {
+            const { heading, body } = splitKeyPointLead(t(pt, lang));
+            return (
+              <li
+                key={idx}
+                className="flex items-start gap-2.5 text-sm text-slate-700 font-medium leading-relaxed"
+              >
+                <span className="w-5 h-5 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
+                  <Check className="w-3.5 h-3.5 stroke-[2.8]" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  {heading && (
+                    <span className="font-bold text-slate-900 mr-1.5">
+                      <FormattedInline text={heading} />
+                    </span>
+                  )}
+                  <FormattedInline text={body} />
+                </span>
+              </li>
+            );
+          })}
         </ul>
+      )}
+
+      {section.summaryRule && (
+        <div className="bg-blue-50 border-l-4 border-blue-500 text-blue-900 rounded-r-2xl p-4 flex items-start gap-3 shadow-2xs">
+          <span className="w-7 h-7 rounded-xl bg-blue-500 text-white flex items-center justify-center shrink-0 mt-0.5">
+            <BookmarkCheck className="w-4 h-4" />
+          </span>
+          <div className="text-xs sm:text-sm leading-relaxed space-y-1 min-w-0">
+            <div className="font-display font-extrabold text-blue-800">
+              {copy.summaryRuleLabel}
+            </div>
+            <div className="text-blue-950/90">
+              <FormattedInline text={t(section.summaryRule, lang)} />
+            </div>
+          </div>
+        </div>
       )}
 
       {allDiagrams.map((diagram, dIdx) => (
@@ -203,45 +245,49 @@ export const VisualSectionCard: React.FC<VisualSectionCardProps> = ({
               type="button"
               onClick={() => setTipExpanded((prev) => !prev)}
               aria-expanded={tipExpanded}
-              className="min-h-[44px] w-full sm:w-auto inline-flex items-center justify-between sm:justify-start gap-2.5 px-4 py-2.5 rounded-2xl border-2 border-amber-200 border-b-4 active:border-b-2 active:translate-y-0.5 bg-amber-50/90 hover:bg-amber-100/80 text-xs font-extrabold text-amber-900 transition-all cursor-pointer"
+              className="min-h-[44px] w-full sm:w-auto inline-flex items-center justify-between sm:justify-start gap-2.5 px-4 py-2.5 rounded-2xl border-2 border-rose-200 border-b-4 active:border-b-2 active:translate-y-0.5 bg-rose-50 hover:bg-rose-100/80 text-xs font-extrabold text-rose-900 transition-all cursor-pointer"
             >
               <span className="inline-flex items-center gap-2">
-                <span className="w-6 h-6 rounded-lg bg-amber-400 text-white flex items-center justify-center shrink-0">
+                <span className="w-6 h-6 rounded-lg bg-rose-500 text-white flex items-center justify-center shrink-0">
                   <Lightbulb className="w-3.5 h-3.5" />
                 </span>
                 <span>{tipExpanded ? copy.hideExamTip : copy.showExamTip}</span>
               </span>
               <ChevronDown
-                className={`w-4 h-4 text-amber-700 shrink-0 transition-transform duration-200 ${
+                className={`w-4 h-4 text-rose-700 shrink-0 transition-transform duration-200 ${
                   tipExpanded ? 'rotate-180' : ''
                 }`}
               />
             </button>
 
             {tipExpanded && (
-              <div className="rounded-2xl border-2 border-amber-200 bg-amber-50/80 p-4 sm:p-5 flex items-start gap-3">
-                <span className="w-7 h-7 rounded-xl bg-amber-400 text-white flex items-center justify-center shrink-0">
-                  <Lightbulb className="w-4 h-4" />
+              <div className="bg-rose-50 border-l-4 border-rose-500 text-rose-900 rounded-r-2xl p-4 sm:p-5 flex items-start gap-3 shadow-2xs">
+                <span className="w-7 h-7 rounded-xl bg-rose-500 text-white flex items-center justify-center shrink-0 mt-0.5">
+                  <AlertTriangle className="w-4 h-4" />
                 </span>
-                <div className="text-xs sm:text-sm leading-relaxed text-amber-950">
-                  <span className="font-display font-extrabold text-amber-800 mr-1.5">
-                    {copy.examTipLabel}
-                  </span>
-                  {t(section.examTip, lang)}
+                <div className="text-xs sm:text-sm leading-relaxed space-y-1 min-w-0">
+                  <div className="font-display font-extrabold text-rose-800">
+                    {copy.criticalNoteLabel}
+                  </div>
+                  <div className="text-rose-950/90">
+                    <FormattedInline text={t(section.examTip, lang)} />
+                  </div>
                 </div>
               </div>
             )}
           </div>
         ) : (
-          <div className="rounded-2xl border-2 border-amber-200 bg-amber-50/80 p-4 flex items-start gap-3">
-            <span className="w-7 h-7 rounded-xl bg-amber-400 text-white flex items-center justify-center shrink-0">
-              <Lightbulb className="w-4 h-4" />
+          <div className="bg-rose-50 border-l-4 border-rose-500 text-rose-900 rounded-r-2xl p-4 flex items-start gap-3 shadow-2xs">
+            <span className="w-7 h-7 rounded-xl bg-rose-500 text-white flex items-center justify-center shrink-0 mt-0.5">
+              <AlertTriangle className="w-4 h-4" />
             </span>
-            <div className="text-xs sm:text-[13px] leading-relaxed text-amber-950">
-              <span className="font-display font-extrabold text-amber-800 mr-1.5">
-                {copy.examTipLabel}
-              </span>
-              {t(section.examTip, lang)}
+            <div className="text-xs sm:text-sm leading-relaxed space-y-1 min-w-0">
+              <div className="font-display font-extrabold text-rose-800">
+                {copy.criticalNoteLabel}
+              </div>
+              <div className="text-rose-950/90">
+                <FormattedInline text={t(section.examTip, lang)} />
+              </div>
             </div>
           </div>
         ))}

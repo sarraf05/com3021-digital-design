@@ -104,6 +104,10 @@ export const week9: WeekModule = {
           ],
         },
       ],
+      summaryRule: {
+        tr: 'BCD Adder düzeltme sinyali C = K + Z₈Z₄ + Z₈Z₂ ham toplam 10–19 arasında olduğunda 1 olur ve ikinci 4-bit toplayıcıya 0110 (+6) ekleterek mod-16 ikili sistemi mod-10 onluk aritmetiğe hizalar.',
+        en: 'The BCD Adder correction signal C = K + Z₈Z₄ + Z₈Z₂ asserts whenever the raw sum is 10–19, adding 0110 (+6) in the second 4-bit adder to align mod-16 binary addition with mod-10 decimal arithmetic.',
+      },
       examTip: {
         tr: 'BCD Adder blok şemasında ikinci toplayıcının alt girişlerine [0, C, C, 0] bağlanır! Böylece C = 0 iken +0000, C = 1 iken otomatik +0110 (+6) eklenmiş olur.',
         en: 'In the BCD Adder block diagram, the lower inputs of the second 4-bit adder are wired to [0, C, C, 0]! That automatically adds +0000 when C = 0 and +0110 (+6) when C = 1.',

@@ -114,6 +114,10 @@ export const week1: WeekModule = {
           ],
         },
       ],
+      summaryRule: {
+        tr: 'Bir r tabanında tam kısım MSB\'den LSB\'ye r⁰, r¹, r²... ağırlıklarına; kesir kısmı ise r⁻¹, r⁻²... ağırlıklarına sahiptir. Binary (r=2) ↔ Octal (2³) dönüşümleri 3\'lü, Binary ↔ Hexadecimal (2⁴) dönüşümleri ise 4\'lü bit bloklarıyla yapılır.',
+        en: 'In any radix r, integer digits carry weights r⁰, r¹, r²... while fractional digits carry r⁻¹, r⁻²... Binary (r=2) ↔ Octal (2³) maps cleanly in 3-bit blocks, and Binary ↔ Hexadecimal (2⁴) maps in 4-bit blocks.',
+      },
       examTip: {
         tr: 'Sınavlarda 2⁰=1 ... 2¹⁰=1024 (1K), 2¹⁶=65536 (64K) ve kesirli kuvvetler (2⁻¹=0.5, 2⁻²=0.25, 2⁻³=0.125, 2⁻⁴=0.0625) ezbere bilinmelidir.',
         en: 'Memorize powers of 2 from 2⁰=1 through 2¹⁰=1024 (1K), 2¹⁶=65536 (64K), and negative powers (2⁻¹=0.5, 2⁻²=0.25, 2⁻³=0.125, 2⁻⁴=0.0625) for fast exam calculations.',

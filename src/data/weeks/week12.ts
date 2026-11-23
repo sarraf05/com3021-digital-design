@@ -125,6 +125,10 @@ export const week12: WeekModule = {
           ],
         },
       ],
+      summaryRule: {
+        tr: 'Mealy makinesinde çıkış y = f(State, Input) doğrudan girişe de bağlıdır (daha hızlı ve genelde daha az durum); Moore makinesinde ise çıkış yalnızca duruma bağlıdır y = f(State) ve saatle tam senkrondur.',
+        en: 'In a Mealy machine, output y = f(State, Input) depends directly on inputs (faster response, fewer states); in a Moore machine, output y = f(State) depends strictly on Flip-Flop states and is fully synchronous.',
+      },
       examTip: {
         tr: 'Bir Mealy makinesinde girişteki kısa süreli gürültüler (glitch) saat darbesi gelmese bile çıkışa yansıyabilir; Moore makinesi ise çıkışı yalnızca Flip-Flop durumlarına bağladığı için tamamen senkron ve gürültüye dayanıklıdır.',
         en: 'In a Mealy machine, brief input glitches can propagate directly to the output between clock edges; a Moore machine ties its output strictly to Flip-Flop state bits, making it fully synchronous and glitch-free.',

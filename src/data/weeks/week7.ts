@@ -172,6 +172,10 @@ export const week7: WeekModule = {
         variables: 3,
         initialMinterms: [1, 2, 4, 7],
       },
+      summaryRule: {
+        tr: 'Full Adder toplamı S = x ⊕ y ⊕ C_in ve eldesi C_out = xy + C_in(x ⊕ y) olarak üretilir. Mod kontrollü (M) XOR katmanı ve C₀ = M bağlantısı aynı 4-bit toplayıcıyı tek pinle hem Adder (M=0) hem Subtractor (M=1) yapar.',
+        en: 'A Full Adder computes Sum S = x ⊕ y ⊕ C_in and Carry C_out = xy + C_in(x ⊕ y). Adding mode-controlled XOR gates with C₀ = M turns a single 4-bit adder into a combined Adder (M=0) and Subtractor (M=1).',
+      },
       examTip: {
         tr: 'Full Adder\'ın Sum çıkışı Σm(1, 2, 4, 7) (Odd Function), Carry çıkışı ise Σm(3, 5, 6, 7) (Majority Function: en az iki giriş 1 ise 1) olarak çalışır!',
         en: 'Remember that a Full Adder’s Sum output is Σm(1, 2, 4, 7) (Odd Function), while its Carry output is Σm(3, 5, 6, 7) (Majority Function: 1 when ≥ 2 inputs are 1)!',

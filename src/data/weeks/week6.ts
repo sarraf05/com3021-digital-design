@@ -108,6 +108,10 @@ export const week6: WeekModule = {
           ],
         },
       ],
+      summaryRule: {
+        tr: 'NAND ve NOR evrensel kapılardır: İki seviyeli bir SOP devresi doğrudan NAND-NAND (AND-OR + çift baloncuk) yapısına, iki seviyeli bir POS devresi ise doğrudan NOR-NOR (OR-AND + çift baloncuk) yapısına dönüşür.',
+        en: 'NAND and NOR are universal gates: any two-level SOP circuit converts directly to NAND-NAND (via double-bubble cancellation), while any two-level POS circuit converts directly to NOR-NOR.',
+      },
       examTip: {
         tr: 'NAND-NAND dönüşümünün daima SOP\'tan, NOR-NOR dönüşümünün ise daima POS\'tan başladığını aklınızda tutun. K-Map\'ten SOP bulduysanız NAND\'a, POS bulduysanız NOR\'a geçmek en kısa yoldur.',
         en: 'Remember that NAND-NAND conversion always starts from SOP, whereas NOR-NOR conversion always starts from POS. Group 1s for NAND, or group 0s for NOR!',

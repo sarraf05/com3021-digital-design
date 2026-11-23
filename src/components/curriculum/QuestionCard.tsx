@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import {
   CheckCircle2,
   XCircle,
@@ -6,11 +6,14 @@ import {
   BookOpenCheck,
   Star,
   Sparkles,
+  Loader2,
 } from 'lucide-react';
 import type { Question } from '../../types/curriculum';
 import { useSession } from '../../context/SessionContext';
 import { t, UI_STRINGS } from '../../i18n/translations';
-import { CircuitSimulator } from '../simulator/CircuitSimulator';
+import { ErrorBoundary } from './ErrorBoundary';
+
+const CircuitSimulator = lazy(() => import('../simulator/CircuitSimulator'));
 
 interface QuestionCardProps {
   question: Question;
@@ -430,20 +433,33 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
             </div>
           )}
 
-          <CircuitSimulator
-            mode="challenge"
-            challengeKey={question.id}
-            compact
-            challenge={{
-              inputs: question.inputs,
-              outputs: question.outputs,
-              allowedComponents: question.allowedComponents,
-              maxComponents: question.maxComponents,
-              expectedTruthTable: question.expectedTruthTable,
-              sequentialTest: question.sequentialTest,
-            }}
-            onChallengePass={() => onMarkCompleted(question.id)}
-          />
+          <ErrorBoundary>
+            <Suspense
+              fallback={
+                <div className="min-h-[320px] rounded-2xl border-2 border-emerald-200 bg-emerald-50/40 flex flex-col items-center justify-center gap-2.5 p-6 text-center">
+                  <Loader2 className="w-5 h-5 animate-spin text-emerald-600" />
+                  <span className="font-display text-xs font-extrabold text-slate-700">
+                    {UI_STRINGS[lang].pwa.loadingSimulator}
+                  </span>
+                </div>
+              }
+            >
+              <CircuitSimulator
+                mode="challenge"
+                challengeKey={question.id}
+                compact
+                challenge={{
+                  inputs: question.inputs,
+                  outputs: question.outputs,
+                  allowedComponents: question.allowedComponents,
+                  maxComponents: question.maxComponents,
+                  expectedTruthTable: question.expectedTruthTable,
+                  sequentialTest: question.sequentialTest,
+                }}
+                onChallengePass={() => onMarkCompleted(question.id)}
+              />
+            </Suspense>
+          </ErrorBoundary>
         </div>
       )}
     </div>

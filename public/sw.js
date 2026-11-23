@@ -36,6 +36,14 @@ function shouldHandleRequest(request) {
 
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return false;
 
+  // Never intercept/cache large PDF textbook files or Range stream requests
+  if (
+    url.pathname.toLowerCase().endsWith('.pdf') ||
+    request.headers.has('range')
+  ) {
+    return false;
+  }
+
   // Never serve stale sw.js or interfere with Vite dev HMR endpoints
   if (
     url.origin === self.location.origin &&
@@ -137,6 +145,7 @@ self.addEventListener('message', (event) => {
           try {
             const parsed = new URL(rawUrl, self.location.origin);
             if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
+            if (parsed.pathname.toLowerCase().endsWith('.pdf')) return false;
             if (
               parsed.origin === self.location.origin &&
               (parsed.pathname === '/sw.js' ||

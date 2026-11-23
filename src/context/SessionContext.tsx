@@ -14,7 +14,7 @@ import type {
   VerificationResult,
 } from '../types/simulator';
 
-export type MainView = 'curriculum' | 'tools' | 'simulator';
+export type MainView = 'curriculum' | 'tools' | 'simulator' | 'book';
 export type LessonViewMode = 'full' | 'focus';
 export type FocusSubTab = 'theory' | 'practice';
 
@@ -100,13 +100,14 @@ export interface SessionState {
   labCircuit: LabCircuitSession | null;
   challengeCircuits: Record<string, ChallengeCircuitSession>;
   customICs: CustomICDefinition[];
+  bookPage: number;
   tools: ToolsSessionState;
 }
 
 const SESSION_STORAGE_KEY = 'com3021_digital_design_session_v1';
 const WRITE_DEBOUNCE_MS = 300;
 
-const VALID_VIEWS = new Set<MainView>(['curriculum', 'tools', 'simulator']);
+const VALID_VIEWS = new Set<MainView>(['curriculum', 'tools', 'simulator', 'book']);
 const VALID_TOOLS = new Set<WidgetType>([
   'BaseComplementVisualizer',
   'TruthTableBuilder',
@@ -130,6 +131,7 @@ function createInitialSessionState(): SessionState {
     labCircuit: null,
     challengeCircuits: {},
     customICs: [],
+    bookPage: 25,
     tools: {},
   };
 }
@@ -211,6 +213,14 @@ function readFromSessionStorage(): SessionState {
 
     const customICs = Array.isArray(parsed.customICs) ? parsed.customICs : [];
 
+    const bookPage =
+      typeof parsed.bookPage === 'number' &&
+      Number.isInteger(parsed.bookPage) &&
+      parsed.bookPage >= 1 &&
+      parsed.bookPage <= 712
+        ? parsed.bookPage
+        : fallback.bookPage;
+
     const tools =
       parsed.tools && typeof parsed.tools === 'object' ? parsed.tools : {};
 
@@ -228,6 +238,7 @@ function readFromSessionStorage(): SessionState {
       labCircuit,
       challengeCircuits,
       customICs,
+      bookPage,
       tools,
     };
   } catch {
@@ -276,6 +287,8 @@ interface SessionContextValue {
   ) => void;
   addCustomIC: (ic: CustomICDefinition) => void;
   removeCustomIC: (id: string) => void;
+  setBookPage: (page: number) => void;
+  openBookAtPage: (page: number) => void;
   updateToolsState: <K extends keyof ToolsSessionState>(
     key: K,
     value: ToolsSessionState[K]
@@ -491,6 +504,22 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({
     }));
   }, []);
 
+  const setBookPage = useCallback((page: number) => {
+    const clamped = Math.min(712, Math.max(1, Math.round(page)));
+    setSession((prev) =>
+      prev.bookPage === clamped ? prev : { ...prev, bookPage: clamped }
+    );
+  }, []);
+
+  const openBookAtPage = useCallback((page: number) => {
+    const clamped = Math.min(712, Math.max(1, Math.round(page)));
+    setSession((prev) => ({
+      ...prev,
+      bookPage: clamped,
+      activeView: 'book',
+    }));
+  }, []);
+
   const updateToolsState = useCallback(
     <K extends keyof ToolsSessionState>(key: K, value: ToolsSessionState[K]) => {
       setSession((prev) => ({
@@ -535,6 +564,8 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({
         setChallengeCircuit,
         addCustomIC,
         removeCustomIC,
+        setBookPage,
+        openBookAtPage,
         updateToolsState,
         resetSession,
       }}

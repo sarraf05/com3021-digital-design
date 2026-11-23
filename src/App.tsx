@@ -17,9 +17,11 @@ import {
   Sparkles,
   LayoutList,
   Check,
+  BookMarked,
   type LucideIcon,
 } from 'lucide-react';
 import { WEEKS } from './data/weeks';
+import { getTextbookEntryForWeek } from './data/textbookMap';
 import type { WidgetType } from './types/curriculum';
 import { useSession, type MainView } from './context/SessionContext';
 import { usePWA } from './hooks/usePWA';
@@ -28,6 +30,7 @@ import { VisualSectionCard } from './components/curriculum/VisualSectionCard';
 import { QuestionCard } from './components/curriculum/QuestionCard';
 import { CircuitSimulator } from './components/simulator/CircuitSimulator';
 import { WidgetRenderer } from './components/widgets/WidgetRenderer';
+import { BookViewer } from './components/book/BookViewer';
 
 const WIDGET_TABS: {
   id: WidgetType;
@@ -112,6 +115,8 @@ export default function App() {
     setSelectedWeekId,
     setActiveTool,
     markQuestionCompleted,
+    setBookPage,
+    openBookAtPage,
     resetSession,
   } = useSession();
 
@@ -125,6 +130,7 @@ export default function App() {
     selectedWeekId,
     activeTool,
     completedQuestions,
+    bookPage,
   } = session;
   const ui = UI_STRINGS[language];
   const { isOnline, isOfflineReady, isInstallable, isInstalled, isIOS, install } =
@@ -138,6 +144,7 @@ export default function App() {
   const hamburgerBtnRef = useRef<HTMLButtonElement>(null);
 
   const activeWeek = WEEKS.find((w) => w.id === selectedWeekId) ?? WEEKS[0];
+  const activeWeekBookEntry = getTextbookEntryForWeek(activeWeek.weekNumber);
   const activeTheme = activeWeek.isExam
     ? WEEK_THEMES[4]
     : WEEK_THEMES[(activeWeek.weekNumber - 1) % WEEK_THEMES.length];
@@ -285,7 +292,7 @@ export default function App() {
             }}
             className="font-display text-xs sm:text-base lg:text-lg font-black tracking-tight text-slate-800 whitespace-nowrap shrink-0"
           >
-            <span className="md:hidden">{ui.header.courseShort}</span>
+            <span className="hidden sm:inline md:hidden">{ui.header.courseShort}</span>
             <span className="hidden md:inline">{ui.header.courseFull}</span>
           </a>
         </div>
@@ -293,12 +300,12 @@ export default function App() {
         {/* Mobile (< 768px) Compact Icon+Label Navigation Pills */}
         <nav
           aria-label={ui.header.mobileNavLabel}
-          className="flex md:hidden items-center gap-1 shrink-0"
+          className="flex md:hidden items-center gap-0.5 sm:gap-1 shrink-0"
         >
           <button
             type="button"
             onClick={() => handleSwitchView('curriculum')}
-            className={`flex items-center gap-1 min-h-[38px] px-2 sm:px-2.5 py-1.5 rounded-xl border-2 text-[11px] font-extrabold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+            className={`flex items-center gap-1 min-h-[38px] px-1.5 sm:px-2 py-1.5 rounded-xl border-2 text-[11px] font-extrabold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
               activeView === 'curriculum'
                 ? 'bg-sky-100 border-sky-300 text-sky-800 shadow-xs'
                 : 'bg-white border-transparent text-slate-500 hover:text-slate-800'
@@ -310,7 +317,7 @@ export default function App() {
           <button
             type="button"
             onClick={() => handleSwitchView('tools')}
-            className={`flex items-center gap-1 min-h-[38px] px-2 sm:px-2.5 py-1.5 rounded-xl border-2 text-[11px] font-extrabold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+            className={`flex items-center gap-1 min-h-[38px] px-1.5 sm:px-2 py-1.5 rounded-xl border-2 text-[11px] font-extrabold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
               activeView === 'tools'
                 ? 'bg-violet-100 border-violet-300 text-violet-800 shadow-xs'
                 : 'bg-white border-transparent text-slate-500 hover:text-slate-800'
@@ -322,7 +329,7 @@ export default function App() {
           <button
             type="button"
             onClick={() => handleSwitchView('simulator')}
-            className={`flex items-center gap-1 min-h-[38px] px-2 sm:px-2.5 py-1.5 rounded-xl border-2 text-[11px] font-extrabold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+            className={`flex items-center gap-1 min-h-[38px] px-1.5 sm:px-2 py-1.5 rounded-xl border-2 text-[11px] font-extrabold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
               activeView === 'simulator'
                 ? 'bg-emerald-500 border-emerald-600 text-white shadow-xs'
                 : 'bg-emerald-50 border-emerald-200 text-emerald-700'
@@ -331,10 +338,22 @@ export default function App() {
             <Cpu className="w-3.5 h-3.5 shrink-0" />
             <span>{ui.header.tabLabMobile}</span>
           </button>
+          <button
+            type="button"
+            onClick={() => handleSwitchView('book')}
+            className={`flex items-center gap-1 min-h-[38px] px-1.5 sm:px-2 py-1.5 rounded-xl border-2 text-[11px] font-extrabold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+              activeView === 'book'
+                ? 'bg-amber-100 border-amber-300 text-amber-900 shadow-xs'
+                : 'bg-amber-50/70 border-amber-200/80 text-amber-800 hover:bg-amber-100/70'
+            }`}
+          >
+            <BookMarked className="w-3.5 h-3.5 shrink-0" />
+            <span>{ui.header.tabBookMobile}</span>
+          </button>
         </nav>
 
         {/* Zone 2: Tablet & Desktop Single-Line Navigation Links */}
-        <nav className="hidden md:flex items-center gap-5 lg:gap-7 text-xs lg:text-sm font-bold">
+        <nav className="hidden md:flex items-center gap-4 lg:gap-6 text-xs lg:text-sm font-bold">
           <button
             type="button"
             onClick={() => handleSwitchView('curriculum')}
@@ -367,6 +386,17 @@ export default function App() {
             }`}
           >
             {ui.header.tabLabDesktop}
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSwitchView('book')}
+            className={`min-h-[36px] px-3 py-1.5 rounded-2xl border-2 border-b-[3px] active:border-b-2 active:translate-y-0.5 text-xs font-display font-extrabold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+              activeView === 'book'
+                ? 'bg-amber-400 border-amber-500 text-slate-900 shadow-xs'
+                : 'bg-amber-50 hover:bg-amber-100 border-amber-200 hover:border-amber-300 text-amber-900'
+            }`}
+          >
+            {ui.header.tabBookDesktop}
           </button>
         </nav>
 
@@ -626,7 +656,7 @@ export default function App() {
         <main
           ref={mainRef}
           className={`flex-1 min-w-0 h-full ${
-            activeView === 'simulator'
+            activeView === 'simulator' || activeView === 'book'
               ? 'overflow-hidden'
               : 'overflow-y-auto overscroll-y-contain'
           }`}
@@ -704,13 +734,23 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <h1 className="font-display text-2xl sm:text-3xl font-black text-slate-900 tracking-tight text-balance">
-                    {t(activeWeek.englishTitle, language)}
-                  </h1>
-                  <p className={`text-base font-bold ${activeTheme.accentText}`}>
-                    {t(activeWeek.turkishSubtitle, language)}
-                  </p>
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                  <div className="space-y-1.5 min-w-0">
+                    <h1 className="font-display text-2xl sm:text-3xl font-black text-slate-900 tracking-tight text-balance">
+                      {t(activeWeek.englishTitle, language)}
+                    </h1>
+                    <p className={`text-base font-bold ${activeTheme.accentText}`}>
+                      {t(activeWeek.turkishSubtitle, language)}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => openBookAtPage(activeWeekBookEntry.page)}
+                    className="self-start min-h-[42px] px-3.5 py-2 rounded-2xl border-2 border-amber-300 border-b-4 bg-amber-50 hover:bg-amber-100 active:border-b-2 active:translate-y-0.5 text-amber-950 text-xs font-display font-extrabold inline-flex items-center gap-1.5 shadow-xs transition-all whitespace-nowrap shrink-0 cursor-pointer"
+                  >
+                    <span>{ui.curriculum.openInBook(activeWeekBookEntry.page)}</span>
+                  </button>
                 </div>
 
                 <p className="text-sm sm:text-[15px] text-slate-600 leading-relaxed max-w-3xl">
@@ -1122,6 +1162,10 @@ export default function App() {
             <div className="h-full w-full overflow-hidden flex flex-col p-1.5 sm:p-2.5 lg:p-3">
               <CircuitSimulator mode="lab" />
             </div>
+          )}
+
+          {activeView === 'book' && (
+            <BookViewer currentPage={bookPage} onPageChange={setBookPage} />
           )}
         </main>
       </div>

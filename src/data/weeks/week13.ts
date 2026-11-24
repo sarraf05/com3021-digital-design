@@ -80,6 +80,21 @@ export const week13: WeekModule = {
             },
           ],
         },
+        {
+          kind: 'schematic',
+          diagramId: 'synthesis-6step-pipeline',
+          caption: {
+            tr: 'Vektörel Tasarım Akış Şeması: Mano 6 Adımlı Senkron Ardışıl Devre Sentez Boru Hattı',
+            en: 'Vector Design Pipeline: Mano’s 6-Step Synchronous Sequential Synthesis Flow',
+          },
+          equation: 'Spec → State Diagram → Reduction → Assignment → Excitation + K-Map → Circuit',
+          summary: {
+            tr: 'Sözel problemden başlayarak her adım bir sonraki tablo veya donanım aşamasını sistematik olarak üretir.',
+            en: 'Each stage systematically transforms word specifications into the next intermediate table until the gate-level schematic is complete.',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
       ],
       summaryRule: {
         tr: 'Mano 6 Adımlı Sentez Özeti: Durum Diyagramı → State Reduction → İkili Kodlama (⌈log₂ M⌉ Flip-Flop) → Uyarım Tablosu (Excitation Table) → Her FF girişi ve çıkış için K-Map → Ortak Clock\'lu Devre.',
@@ -129,6 +144,21 @@ export const week13: WeekModule = {
             ],
           ],
         },
+        {
+          kind: 'schematic',
+          diagramId: 'sequence-detector-101',
+          caption: {
+            tr: 'Vektörel Durum Diyagramı: "101" Mealy Dizi Algılayıcı (Overlapping vs. Non-Overlapping)',
+            en: 'Vector State Diagram: "101" Mealy Sequence Detector (Overlapping vs. Non-Overlapping)',
+          },
+          equation: 'Overlapping: S₂ —(1/1)→ S₁   |   Non-Overlapping: S₂ —(1/1)→ S₀',
+          summary: {
+            tr: 'Örtüşmeli tasarımda yakalanan "101" dizisinin son "1" biti S₁\'e dönülerek korunur; örtüşmesizde ise S₀ başlangıç durumuna sıfırlanır.',
+            en: 'In overlapping mode, the trailing "1" of "101" is preserved by transitioning to S₁; in non-overlapping mode, it resets to S₀.',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
       ],
       widget: 'StateMachineExplorer',
       examTip: {
@@ -167,6 +197,21 @@ export const week13: WeekModule = {
             ['1 1', '1 0', '1, 0', '0, 1', 'X 0,  X 1'],
             ['1 0', '0 0', '0, 0', '1, 0', 'X 1,  0 X'],
           ],
+        },
+        {
+          kind: 'schematic',
+          diagramId: 'jk-gray-counter-schematic',
+          caption: {
+            tr: 'Vektörel Devre Şeması: Sıfır Ek Kapılı 2-Bit JK Flip-Flop Gray Code Sayıcı',
+            en: 'Vector Circuit Schematic: Zero-Gate 2-Bit JK Flip-Flop Gray Code Counter',
+          },
+          equation: "J_A = B,   K_A = B',   J_B = A',   K_B = A   (00 → 01 → 11 → 10 → 00)",
+          summary: {
+            tr: 'İki JK Flip-Flop\'un Q ve Q\' çıkışları doğrudan birbirinin J ve K girişlerine çapraz bağlandığında ekstra hiçbir lojik kapı gerekmez.',
+            en: 'Cross-wiring the built-in Q and Q\' outputs of two JK Flip-Flops directly to J and K inputs realizes the Gray sequence with zero external gates.',
+          },
+          collapsible: true,
+          defaultOpen: true,
         },
       ],
       examTip: {

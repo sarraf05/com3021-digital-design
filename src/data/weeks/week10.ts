@@ -67,6 +67,21 @@ export const week10: WeekModule = {
             ['1', 'X', 'X', 'X', '1', '1', { tr: '1 (D₃ en yüksek)', en: '1 (D₃ highest)' }],
           ],
         },
+        {
+          kind: 'schematic',
+          diagramId: 'priority-encoder-4to2',
+          caption: {
+            tr: 'Vektörel Devre Şeması: 4-to-2 Priority Encoder (D₃ > D₂ > D₁ > D₀) ve Valid (V)',
+            en: 'Vector Circuit Schematic: 4-to-2 Priority Encoder (D₃ > D₂ > D₁ > D₀) & Valid (V)',
+          },
+          equation: "x = D₂ + D₃,   y = D₃ + D₁·D₂',   V = D₀ + D₁ + D₂ + D₃",
+          summary: {
+            tr: 'Birden fazla giriş aynı anda 1 olsa bile yalnızca en yüksek indeksli aktif giriş kodlanır; hiçbir giriş aktif değilse V = 0 uyarısı verir.',
+            en: 'Even when multiple inputs assert simultaneously, only the highest-priority active index is encoded; V = 0 flags no active inputs.',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
       ],
       examTip: {
         tr: 'Priority Encoder doğruluk tablosunda V = 0 iken x ve y çıkışları Don\'t-Care (X) kabul edilir; bu sayede K-Map sadeleştirmesinde x ve y ifadeleri çok daha küçük çıkar!',
@@ -170,6 +185,21 @@ export const week10: WeekModule = {
             },
           ],
         },
+        {
+          kind: 'schematic',
+          diagramId: 'mux-4to1-inner',
+          caption: {
+            tr: 'Vektörel Devre Şeması: 4×1 Multiplexer (Veri Seçici) İç Kapı Mimarisi',
+            en: 'Vector Circuit Schematic: Internal Gate Architecture of a 4×1 Multiplexer',
+          },
+          equation: "Y = I₀·S₁'·S₀' + I₁·S₁'·S₀ + I₂·S₁·S₀' + I₃·S₁·S₀",
+          summary: {
+            tr: 'Seçme hatları (S₁, S₀) yalnızca tek bir 3-girişli AND kapısını açarak seçilen I_k veri girişini çıkış OR kapısına iletir.',
+            en: 'Select lines (S₁, S₀) enable exactly one 3-input AND gate, passing only the addressed I_k data line to the output OR gate.',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
       ],
       widget: 'TruthTableBuilder',
       widgetConfig: {
@@ -225,6 +255,21 @@ export const week10: WeekModule = {
             ['1', '0', '0 (LOW)', { tr: 'Hattı GND\'ye çeker', en: 'Pulls line to GND' }],
             ['1', '1', '1 (HIGH)', { tr: 'Hattı VCC\'ye sürer', en: 'Drives line to VCC' }],
           ],
+        },
+        {
+          kind: 'schematic',
+          diagramId: 'tristate-shared-bus',
+          caption: {
+            tr: 'Vektörel Devre Şeması: Three-State Tamponlar ve Decoder Korumalı Ortak Veri Yolu (Shared Bus)',
+            en: 'Vector Circuit Schematic: Three-State Buffers & Decoder-Guarded Shared Bus',
+          },
+          equation: 'Enᵢ = 1 ⇒ Y_bus = Aᵢ   |   Enᵢ = 0 ⇒ Hi-Z (Açık Devre)',
+          summary: {
+            tr: '2-to-4 Decoder kontrol sinyalleri aynı anda yalnızca tek bir tamponu aktif tutar; diğer sürücüler Hi-Z konumunda kalarak Bus Contention riskini önler.',
+            en: 'Mutually exclusive 2-to-4 Decoder outputs enable at most one buffer at a time while others stay Hi-Z, preventing Bus Contention.',
+          },
+          collapsible: true,
+          defaultOpen: true,
         },
       ],
       examTip: {

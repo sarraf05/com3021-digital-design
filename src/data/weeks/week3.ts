@@ -74,6 +74,21 @@ export const week3: WeekModule = {
             [{ tr: 'Sadeleştirme', en: 'Simplification' }, "x + x'y = x + y", "x(x' + y) = xy"],
           ],
         },
+        {
+          kind: 'schematic',
+          diagramId: 'timing-waveform-gates',
+          caption: {
+            tr: 'Vektörel Zamanlama Şeması: AND, OR ve XOR Kapılarının Giriş Dalgalarına Tepkisi',
+            en: 'Vector Timing Diagram: AND, OR & XOR Gate Responses to Input Waveforms',
+          },
+          equation: 'F_AND = A · B,   F_OR = A + B,   F_XOR = A ⊕ B',
+          summary: {
+            tr: 't₀..t₅ aralıklarında A ve B işaretlerinin kombinasyonuna göre AND yalnızca ikisi 1 iken, OR en az biri 1 iken, XOR ise yalnızca farklı olduklarında 1 üretir.',
+            en: 'Across intervals t₀..t₅, AND asserts when both A and B are 1, OR when either is 1, and XOR only when A and B differ.',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
       ],
       examTip: {
         tr: 'Sıradan cebirde geçerli olmayan x + yz = (x + y)(x + z) ikinci dağılma yasası, Boole sadeleştirme sorularının en güçlü silahıdır!',
@@ -126,6 +141,36 @@ export const week3: WeekModule = {
               },
             },
           ],
+        },
+        {
+          kind: 'schematic',
+          diagramId: 'demorgan-bubble-push',
+          caption: {
+            tr: 'Vektörel Devre Şeması: DeMorgan Yasaları ve Baloncuk İtme (Bubble Pushing)',
+            en: 'Vector Circuit Schematic: DeMorgan’s Laws & Bubble Pushing',
+          },
+          equation: "(x · y)' = x' + y' (NAND ≡ Bubbled-OR)   |   (x + y)' = x' · y' (NOR ≡ Bubbled-AND)",
+          summary: {
+            tr: 'Çıkış baloncuğunu girişlere iterken kapı gövdesini AND ↔ OR arasında değiştirmek mantıksal işlevi birebir korur.',
+            en: 'Pushing an output inversion bubble back to the inputs while toggling the gate body between AND ↔ OR preserves exact equivalence.',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
+        {
+          kind: 'schematic',
+          diagramId: 'universal-nand-nor-gates',
+          caption: {
+            tr: 'Vektörel Devre Şeması: Evrensel NAND ve NOR Kapılarıyla NOT, AND, OR ve XOR Sentezi',
+            en: 'Vector Circuit Schematic: Synthesizing NOT, AND, OR & XOR Using Universal NAND/NOR Gates',
+          },
+          equation: "NOT(x) = (x·x)' = (x+x)'   |   XOR = 4 × NAND",
+          summary: {
+            tr: 'Tek bir evrensel kapı ailesi (yalnızca NAND veya yalnızca NOR) kullanılarak tüm temel Boole işlemleri ve 4 kapılı XOR devresi kurulabilir.',
+            en: 'Either universal gate family alone (NAND-only or NOR-only) can implement NOT, AND, OR, and a 4-gate XOR network.',
+          },
+          collapsible: true,
+          defaultOpen: true,
         },
       ],
       summaryRule: {

@@ -166,6 +166,36 @@ export const week7: WeekModule = {
             },
           ],
         },
+        {
+          kind: 'schematic',
+          diagramId: 'half-full-adder-inner',
+          caption: {
+            tr: 'Vektörel Devre Şeması: Half Adder ve İki Half Adder + OR ile Full Adder Hiyerarşisi',
+            en: 'Vector Circuit Schematic: Half Adder & Full Adder Built from 2 Half Adders + OR Gate',
+          },
+          equation: 'HA: S = x ⊕ y, C = x·y   |   FA: S = (x ⊕ y) ⊕ C_in,  C_out = x·y + C_in(x ⊕ y)',
+          summary: {
+            tr: 'İlk yarım toplayıcı (x, y) için kısmi toplam ve elde üretir; ikinci yarım toplayıcı C_in ekler ve iki elde bir OR kapısında birleşir.',
+            en: 'The first Half Adder processes (x, y), the second adds C_in, and an OR gate merges both partial carries into C_out.',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
+        {
+          kind: 'schematic',
+          diagramId: 'ripple-carry-adder-4bit',
+          caption: {
+            tr: 'Vektörel Devre Şeması: 4-Bit Ripple Carry Adder Elde Dalgalanma Zinciri',
+            en: 'Vector Circuit Schematic: 4-Bit Ripple Carry Adder Carry Chain',
+          },
+          equation: 't_total = (n - 1)·t_carry + max(t_sum, t_carry) = 3·t_carry + t_sum',
+          summary: {
+            tr: 'Her tam toplayıcı bloğu (FA₀..FA₃) bir önceki aşamanın eldesini bekleyerek çalışır; C₀ → C₁ → C₂ → C₃ → S₃, C₄ kritik yol gecikmesini belirler.',
+            en: 'Each Full Adder stage (FA₀..FA₃) waits for the carry from the stage below, creating the linear C₀ → C₁ → C₂ → C₃ → S₃ critical path.',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
       ],
       widget: 'TruthTableBuilder',
       widgetConfig: {
@@ -233,6 +263,21 @@ export const week7: WeekModule = {
               },
             },
           ],
+        },
+        {
+          kind: 'schematic',
+          diagramId: 'adder-subtractor-4bit',
+          caption: {
+            tr: 'Vektörel Devre Şeması: M Mod Kontrollü 4-Bit Binary Adder-Subtractor ve Overflow (V)',
+            en: 'Vector Circuit Schematic: Mode-Controlled (M) 4-Bit Adder-Subtractor with Overflow (V)',
+          },
+          equation: "M = 0 ⇒ A + B   |   M = 1 ⇒ A + B' + 1 = A - B   |   V = C₃ ⊕ C₄",
+          summary: {
+            tr: 'Tek bir M kontrol hattı hem tüm Bᵢ girişlerini XOR kapılarıyla koşullu tersler hem de C₀ = M üzerinden +1 tümleyen eldesini sağlar.',
+            en: 'A single mode rail M drives all Bᵢ XOR inverters and C₀ = M simultaneously, while V = C₃ ⊕ C₄ detects signed overflow.',
+          },
+          collapsible: true,
+          defaultOpen: true,
         },
       ],
       examTip: {

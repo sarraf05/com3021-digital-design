@@ -103,6 +103,21 @@ export const week9: WeekModule = {
             ],
           ],
         },
+        {
+          kind: 'schematic',
+          diagramId: 'bcd-adder-block',
+          caption: {
+            tr: 'Vektörel Devre Şeması: 4-Bit BCD Adder Blok Diyagramı ve +6 (0110) Düzeltme Devresi',
+            en: 'Vector Circuit Schematic: 4-Bit BCD Adder Block Diagram & +6 (0110) Correction Logic',
+          },
+          equation: 'C = K + Z₈·Z₄ + Z₈·Z₂   (İkinci Toplayıcı Girişi = [0, C, C, 0])',
+          summary: {
+            tr: 'Ham toplam 9\'u aştığında C = 1 olur ve ikinci 4-bit toplayıcının alt girişlerine [0, C, C, 0] = 0110 (+6) uygulanarak geçerli BCD elde edilir.',
+            en: 'When the raw sum exceeds 9, C = 1 drives [0, C, C, 0] = 0110 (+6) into the second 4-bit adder to produce a valid BCD digit and carry.',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
       ],
       summaryRule: {
         tr: 'BCD Adder düzeltme sinyali C = K + Z₈Z₄ + Z₈Z₂ ham toplam 10–19 arasında olduğunda 1 olur ve ikinci 4-bit toplayıcıya 0110 (+6) ekleterek mod-16 ikili sistemi mod-10 onluk aritmetiğe hizalar.',
@@ -170,6 +185,21 @@ export const week9: WeekModule = {
             },
           ],
         },
+        {
+          kind: 'schematic',
+          diagramId: 'comparator-2bit-logic',
+          caption: {
+            tr: 'Vektörel Devre Şeması: 2-Bit Magnitude Comparator (XNOR Eşitlik ve Öncelik Mantığı)',
+            en: 'Vector Circuit Schematic: 2-Bit Magnitude Comparator (XNOR Equality & Priority Logic)',
+          },
+          equation: "xᵢ = (Aᵢ ⊕ Bᵢ)'   |   (A = B) = x₁·x₀   |   (A > B) = A₁B₁' + x₁A₀B₀'",
+          summary: {
+            tr: 'MSB (bit 1) eşitse x₁ = 1 olur ve karar LSB (bit 0) karşılaştırmasına devredilir; tüm bitler eşitse A = B çıkışı 1 olur.',
+            en: 'When MSB (bit 1) matches (x₁ = 1), comparison falls through to LSB (bit 0); A = B asserts only when both XNOR gates equal 1.',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
       ],
       examTip: {
         tr: 'J × K bitlik Binary Multiplier sorularında daima J × K adet AND kapısı ve (J - 1) adet K-bitlik Adder gerektiğini (veya 2×2 için özel 2 adet Half Adder yettiğini) unutmayın!',
@@ -221,6 +251,36 @@ export const week9: WeekModule = {
               { tr: '5 × (2-to-4), ekstra kapı gerekmez', en: '5 × (2-to-4), zero extra gates' },
             ],
           ],
+        },
+        {
+          kind: 'schematic',
+          diagramId: 'decoder-2to4-inner',
+          caption: {
+            tr: 'Vektörel Devre Şeması: Enable (E) Girişli 2-to-4 Decoder İç Kapı Yapısı',
+            en: 'Vector Circuit Schematic: Internal Gate Structure of a 2-to-4 Decoder with Enable (E)',
+          },
+          equation: "D₀ = E·A₁'·A₀',   D₁ = E·A₁'·A₀,   D₂ = E·A₁·A₀',   D₃ = E·A₁·A₀",
+          summary: {
+            tr: 'Dört adet 3-girişli AND kapısı girişlerin tüm mintermlerini üretir; E = 0 olduğunda tüm çıkışlar 0\'a kilitlenir.',
+            en: 'Four 3-input AND gates generate all four minterms simultaneously; setting E = 0 disables all outputs to 0.',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
+        {
+          kind: 'schematic',
+          diagramId: 'decoder-3to8-from-2to4',
+          caption: {
+            tr: 'Vektörel Devre Şeması: İki Adet 2-to-4 Decoder ile 3-to-8 Decoder Ağacı Kurulumu',
+            en: 'Vector Circuit Schematic: Building a 3-to-8 Decoder Tree from Two 2-to-4 Decoders',
+          },
+          equation: "E_top = A₂' (D₀..D₃)   |   E_bot = A₂ (D₄..D₇)",
+          summary: {
+            tr: 'MSB biti A₂ ve tersi A₂\', iki 2-to-4 Decoder bloğunun Enable uçlarını karşılıklı dışlayıcı biçimde seçerek 8 çıkış üretir.',
+            en: 'MSB input A₂ and its complement A₂\' drive the Enable pins of two 2-to-4 Decoders mutually exclusively to yield 8 outputs.',
+          },
+          collapsible: true,
+          defaultOpen: true,
         },
       ],
       widget: 'TruthTableBuilder',

@@ -107,6 +107,21 @@ export const week6: WeekModule = {
             },
           ],
         },
+        {
+          kind: 'schematic',
+          diagramId: 'and-or-to-nand-nand',
+          caption: {
+            tr: 'Vektörel Devre Şeması: SOP → NAND-NAND ve POS → NOR-NOR Çift Baloncuk Dönüşümü',
+            en: 'Vector Circuit Schematic: SOP → NAND-NAND & POS → NOR-NOR Double-Bubble Conversion',
+          },
+          equation: "F = A'B + AC ≡ [(A'B)' · (AC)']'   |   F = (A+B)(C+D) ≡ [(A+B)' + (C+D)']'",
+          summary: {
+            tr: 'İki seviyeli AND-OR devresindeki iç hatlara eklenen çift baloncuklar birbirini iptal ederek doğrudan 2-seviyeli NAND-NAND yapısını verir; OR-AND ise NOR-NOR olur.',
+            en: 'Adding canceling double bubbles between levels transforms two-level AND-OR directly into NAND-NAND, and OR-AND into NOR-NOR.',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
       ],
       summaryRule: {
         tr: 'NAND ve NOR evrensel kapılardır: İki seviyeli bir SOP devresi doğrudan NAND-NAND (AND-OR + çift baloncuk) yapısına, iki seviyeli bir POS devresi ise doğrudan NOR-NOR (OR-AND + çift baloncuk) yapısına dönüşür.',
@@ -170,6 +185,21 @@ export const week6: WeekModule = {
             },
           ],
         },
+        {
+          kind: 'schematic',
+          diagramId: 'multilevel-bubble-pushing',
+          caption: {
+            tr: "Vektörel Devre Şeması: F = A(CD + B) + BC' Çok Seviyeli NAND-Only Dönüşümü",
+            en: "Vector Circuit Schematic: Multi-Level NAND-Only Conversion of F = A(CD + B) + BC'",
+          },
+          equation: "F = A(CD + B) + BC'   (2 Inverter: B' ve C')",
+          summary: {
+            tr: 'Her AND → NAND ve her OR → Bubbled-OR (NAND) çevrilirken eşleşmeyen tekil giriş hatlarına (B ve C) birer Inverter eklenir.',
+            en: 'Converting AND → NAND and OR → Bubbled-OR (NAND) requires inverters only on unmatched primary inputs (B\' and C\').',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
       ],
       examTip: {
         tr: 'İki kablo arasındaki tekil baloncuğu her zaman takip edin: Kablo üzerinde toplam ÇİFT sayıda baloncuk (0 veya 2) varsa mantık korunur; TEK sayıda baloncuk (1) varsa araya mutlaka bir Inverter (tek girişli NAND/NOR) eklenmelidir.',
@@ -209,6 +239,21 @@ export const week6: WeekModule = {
               '(x ⊙ y) ⊙ z = x ⊙ (y ⊙ z)',
             ],
           ],
+        },
+        {
+          kind: 'schematic',
+          diagramId: 'parity-xor-circuits',
+          caption: {
+            tr: 'Vektörel Devre Şeması: 3-Bit Even Parity Generator (Verici) ve 4-Bit Checker (Alıcı)',
+            en: 'Vector Circuit Schematic: 3-Bit Even Parity Generator & 4-Bit Parity Checker',
+          },
+          equation: 'P = x ⊕ y ⊕ z   |   C = x ⊕ y ⊕ z ⊕ P  (C = 1 ⇒ Hata)',
+          summary: {
+            tr: 'Verici 3 veri bitini XOR ağacıyla toplayıp eşlik biti P\'yi üretir; alıcı gelen 4 bitin tamamını XOR\'layarak tek bitlik hatada C = 1 bayrağını kaldırır.',
+            en: 'The transmitter XORs 3 data bits to generate P; the receiver XORs all 4 received bits and raises error flag C = 1 on any single-bit flip.',
+          },
+          collapsible: true,
+          defaultOpen: true,
         },
       ],
       examTip: {

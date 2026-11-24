@@ -38,6 +38,10 @@ import {
   verifyCircuitAgainstTruthTable,
 } from '../../engine/circuitEngine';
 import {
+  analyzeCircuitTruthTable,
+  type TruthTableMode,
+} from '../../engine/truthTableEngine';
+import {
   PRESET_CATEGORIES,
   getCircuitPresets,
   type PresetCategory,
@@ -65,6 +69,7 @@ import {
   COMPONENT_DESCRIPTIONS_EN,
 } from '../../i18n/translations';
 import { NodeRenderer } from './NodeRenderer';
+import { TruthTableModal } from './TruthTableModal';
 
 interface CircuitSimulatorProps {
   mode?: 'lab' | 'challenge';
@@ -517,6 +522,8 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
     inputPins: CustomICPin[];
     outputPins: CustomICPin[];
   } | null>(null);
+  const [truthTableOpen, setTruthTableOpen] = useState(false);
+  const [truthTableMode, setTruthTableMode] = useState<TruthTableMode>('simple');
 
   const showCanvasToast = useCallback(
     (message: string, tone: 'warn' | 'success' | 'info' = 'info') => {
@@ -905,6 +912,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
         setPointerPos(null);
         setContextMenu(null);
         setPackageModal(null);
+        setTruthTableOpen(false);
         return;
       }
       if (
@@ -1688,6 +1696,69 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
     showCanvasToast(sim.customIC.savedToast(blueprint.name), 'success');
   };
 
+  const truthTableAnalysis = useMemo(() => {
+    if (!truthTableOpen) return null;
+    return analyzeCircuitTruthTable(nodes, wires, customICs);
+  }, [truthTableOpen, nodes, wires, customICs]);
+
+  const handleOpenTruthTableModal = () => {
+    const analyzed = analyzeCircuitTruthTable(nodes, wires, customICs);
+    setTruthTableMode(analyzed.recommendedMode);
+    setTruthTableOpen(true);
+  };
+
+  const handleApplyTruthTableInputs = (
+    assignments: { nodeId: string; value: LogicValue }[]
+  ) => {
+    const map = new Map<string, LogicValue>();
+    assignments.forEach((a) => map.set(a.nodeId, a.value));
+    const nextNodes = nodes.map((n) =>
+      map.has(n.id)
+        ? { ...n, outputs: { ...n.outputs, out: map.get(n.id) ?? 0 } }
+        : n
+    );
+    applyEvaluation(nextNodes, wires, false);
+  };
+
+  const handleApplySequentialTruthRow = (
+    inputAssignments: { nodeId: string; value: LogicValue }[],
+    stateAssignments: { nodeId: string; value: LogicValue; compNodeId?: string }[]
+  ) => {
+    const inMap = new Map<string, LogicValue>();
+    inputAssignments.forEach((a) => inMap.set(a.nodeId, a.value));
+    const stMap = new Map<string, LogicValue>();
+    const compMap = new Map<string, LogicValue>();
+    stateAssignments.forEach((s) => {
+      stMap.set(s.nodeId, s.value);
+      if (s.compNodeId) {
+        compMap.set(s.compNodeId, s.value === 1 ? 0 : 1);
+      }
+    });
+
+    const nextNodes = nodes.map((n) => {
+      if (inMap.has(n.id)) {
+        return { ...n, outputs: { ...n.outputs, out: inMap.get(n.id) ?? 0 } };
+      }
+      if (stMap.has(n.id)) {
+        const val = stMap.get(n.id) ?? 0;
+        if (n.type === 'DFF' || n.type === 'JKFF' || n.type === 'TFF') {
+          return {
+            ...n,
+            outputs: { ...n.outputs, q: val, qn: (val === 1 ? 0 : 1) as LogicValue },
+            internal: { ...n.internal, q: val },
+          };
+        }
+        return { ...n, outputs: { ...n.outputs, out: val } };
+      }
+      if (compMap.has(n.id)) {
+        return { ...n, outputs: { ...n.outputs, out: compMap.get(n.id) ?? 0 } };
+      }
+      return n;
+    });
+
+    applyEvaluation(nextNodes, wires, false);
+  };
+
   const handleLoadInternalCircuit = (nodeId: string) => {
     const target = nodes.find((n) => n.id === nodeId);
     if (!target || target.type !== 'CUSTOM_IC') return;
@@ -2170,14 +2241,24 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                 </button>
 
                 {mode === 'lab' && (
-                  <button
-                    type="button"
-                    onClick={handleOpenPackageModal}
-                    title={sim.customIC.packageBtnTitle}
-                    className="flex items-center gap-1 px-2 py-1 rounded-xl bg-violet-50 hover:bg-violet-100 border-2 border-violet-200 text-violet-800 text-[11px] font-extrabold transition-all whitespace-nowrap cursor-pointer min-h-[32px]"
-                  >
-                    <span>{sim.customIC.packageBtnShort}</span>
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleOpenPackageModal}
+                      title={sim.customIC.packageBtnTitle}
+                      className="flex items-center gap-1 px-2 py-1 rounded-xl bg-violet-50 hover:bg-violet-100 border-2 border-violet-200 text-violet-800 text-[11px] font-extrabold transition-all whitespace-nowrap cursor-pointer min-h-[32px]"
+                    >
+                      <span>{sim.customIC.packageBtnShort}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleOpenTruthTableModal}
+                      title={sim.truthTableBtnTitle}
+                      className="flex items-center gap-1 px-2 py-1 rounded-xl bg-sky-50 hover:bg-sky-100 border-2 border-sky-200 text-sky-800 text-[11px] font-extrabold transition-all whitespace-nowrap cursor-pointer min-h-[32px]"
+                    >
+                      <span>{sim.truthTableBtn}</span>
+                    </button>
+                  </>
                 )}
 
                 {mode === 'challenge' && challenge && (
@@ -2534,14 +2615,24 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                 </button>
 
                 {mode === 'lab' && (
-                  <button
-                    type="button"
-                    onClick={handleOpenPackageModal}
-                    title={sim.customIC.packageBtnTitle}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-violet-50 hover:bg-violet-100 border-2 border-violet-200 text-violet-800 text-[11px] font-extrabold transition-all whitespace-nowrap cursor-pointer min-h-[32px]"
-                  >
-                    <span>{sim.customIC.packageBtn}</span>
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleOpenPackageModal}
+                      title={sim.customIC.packageBtnTitle}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-violet-50 hover:bg-violet-100 border-2 border-violet-200 text-violet-800 text-[11px] font-extrabold transition-all whitespace-nowrap cursor-pointer min-h-[32px]"
+                    >
+                      <span>{sim.customIC.packageBtn}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleOpenTruthTableModal}
+                      title={sim.truthTableBtnTitle}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-sky-50 hover:bg-sky-100 border-2 border-sky-200 text-sky-800 text-[11px] font-extrabold transition-all whitespace-nowrap cursor-pointer min-h-[32px]"
+                    >
+                      <span>{sim.truthTableBtn}</span>
+                    </button>
+                  </>
                 )}
 
                 {mode === 'challenge' && challenge && (
@@ -3415,6 +3506,20 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
               </div>
             </form>
           </div>
+        )}
+
+        {/* Live 4-Mode Truth Table & Sequential Analyzer Modal */}
+        {truthTableOpen && truthTableAnalysis && (
+          <TruthTableModal
+            open={truthTableOpen}
+            lang={lang}
+            mode={truthTableMode}
+            analysis={truthTableAnalysis}
+            onChangeMode={setTruthTableMode}
+            onClose={() => setTruthTableOpen(false)}
+            onApplyInputs={handleApplyTruthTableInputs}
+            onApplySequentialRow={handleApplySequentialTruthRow}
+          />
         )}
       </div>
 

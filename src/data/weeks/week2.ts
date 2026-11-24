@@ -165,6 +165,21 @@ export const week2: WeekModule = {
             ],
           ],
         },
+        {
+          kind: 'schematic',
+          diagramId: 'twos-complement-overflow',
+          caption: {
+            tr: 'Vektörel Devre Şeması: İşaretli Toplamada Overflow Algılama (V = C₃ ⊕ C₄)',
+            en: 'Vector Circuit Schematic: Signed Overflow Detection (V = C₃ ⊕ C₄)',
+          },
+          equation: 'V = C₃ ⊕ C₄  (C_in ⊕ C_out)',
+          summary: {
+            tr: 'İşaret bitine (FA₃) giren elde C₃ ile çıkan elde C₄ bir XOR kapısına verilir; ikisi farklıysa sonuç 4-bit [-8, +7] aralığına sığmamıştır (V = 1).',
+            en: 'Carry-in C₃ and carry-out C₄ of the sign-bit stage (FA₃) feed an XOR gate; differing carries flag an out-of-range result (V = 1).',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
       ],
       summaryRule: {
         tr: '2\'s Complement sisteminde çıkarma işlemi M - N = M + (2ⁿ - N) toplama işlemine dönüşür: Elde (Carry) = 1 ise atılır ve kalan sonuç pozitif (+); Elde = 0 ise toplamın tekrar 2\'s Complement\'i alınıp başına (-) işareti konur.',
@@ -245,6 +260,21 @@ export const week2: WeekModule = {
               },
             },
           ],
+        },
+        {
+          kind: 'schematic',
+          diagramId: 'binary-gray-converter',
+          caption: {
+            tr: 'Vektörel Devre Şeması: 4-Bit Binary ↔ Gray Code Dönüştürücü (Paralel vs. Kaskat)',
+            en: 'Vector Circuit Schematic: 4-Bit Binary ↔ Gray Code Converter (Parallel vs. Cascaded)',
+          },
+          equation: 'G₃ = B₃,  Gᵢ = Bᵢ₊₁ ⊕ Bᵢ   |   B₃ = G₃,  Bᵢ = Bᵢ₊₁ ⊕ Gᵢ',
+          summary: {
+            tr: 'Binary → Gray dönüşümü tüm XOR kapılarını paralel (1 kapı gecikmesi) çalıştırırken, Gray → Binary dönüşümü MSB\'den LSB\'ye kaskat XOR zinciri gerektirir.',
+            en: 'Binary-to-Gray runs all XOR gates in parallel (1 gate delay), whereas Gray-to-Binary requires a cascaded XOR chain from MSB to LSB.',
+          },
+          collapsible: true,
+          defaultOpen: true,
         },
       ],
       examTip: {

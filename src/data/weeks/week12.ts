@@ -71,6 +71,21 @@ export const week12: WeekModule = {
             ['1 1', '1', '1 0', '0'],
           ],
         },
+        {
+          kind: 'schematic',
+          diagramId: 'sequential-timing-tpd',
+          caption: {
+            tr: 'Vektörel Zamanlama & Mimari Şeması: Saatli Ardışıl Devre Geri Besleme ve Setup/Hold Penceresi',
+            en: 'Vector Architecture & Timing Schematic: Clocked Sequential Loop & Setup/Hold Constraints',
+          },
+          equation: 'T_clk ≥ t_pd(FF) + t_comb + t_su   |   t_hold ≤ t_pd(FF) + t_comb(min)',
+          summary: {
+            tr: 'Veri, yükselen saat kenarından önce t_su (Setup) ve sonra t_h (Hold) boyunca sabit kalmalıdır; saat kenarından t_pd sonra yeni durum Q(t+1) görünür.',
+            en: 'Inputs must remain stable for t_su before and t_h after the rising clock edge; new state Q(t+1) settles t_pd after the clock edge.',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
       ],
       widget: 'StateMachineExplorer',
       examTip: {
@@ -123,6 +138,21 @@ export const week12: WeekModule = {
               { tr: 'Çoğunlukla +1 fazla durum gerektirir', en: 'Often requires +1 extra state' },
             ],
           ],
+        },
+        {
+          kind: 'schematic',
+          diagramId: 'mealy-vs-moore-arch',
+          caption: {
+            tr: 'Vektörel Mimari Şeması: Mealy (Doğrudan Giriş Yolu) vs. Moore (Tam Senkron Çıkış) FSM',
+            en: 'Vector Architecture Schematic: Mealy (Direct Input Bypass) vs. Moore (Synchronous Output) FSM',
+          },
+          equation: 'Mealy: y = f(State, Input)   |   Moore: y = f(State)',
+          summary: {
+            tr: 'Mealy modelinde girişler Output Logic bloğuna doğrudan ulaşarak 1 saat önce tepki verir; Moore modelinde ise çıkış yalnızca Flip-Flop durumuna bağlıdır.',
+            en: 'In Mealy, inputs feed Output Logic directly for immediate response; in Moore, outputs depend strictly on clocked Flip-Flop state.',
+          },
+          collapsible: true,
+          defaultOpen: true,
         },
       ],
       summaryRule: {
@@ -177,6 +207,36 @@ export const week12: WeekModule = {
               },
             },
           ],
+        },
+        {
+          kind: 'schematic',
+          diagramId: 'state-reduction-flow',
+          caption: {
+            tr: 'Vektörel Akış Şeması: Eşdeğer Durumların Birleştirilmesi (State Reduction: 5 → 4 Durum)',
+            en: 'Vector Flow Diagram: Merging Equivalent States (State Reduction: 5 → 4 States)',
+          },
+          equation: 'S₃ ≡ S₁ (Aynı çıkışlar ve aynı/eşdeğer sonraki durumlar) ⇒ 3 FF → 2 FF Tasarruf!',
+          summary: {
+            tr: 'Tüm girişler için özdeş çıkış ve eşdeğer sonraki durum üreten S₃ satırı silinip S₁ ile değiştirilerek 5 durum 4 duruma ve 3 Flip-Flop 2 Flip-Flop\'a düşürülür.',
+            en: 'Eliminating equivalent row S₃ and replacing references with S₁ reduces 5 states to 4, cutting Flip-Flop count from 3 down to 2.',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
+        {
+          kind: 'schematic',
+          diagramId: 'binary-vs-onehot-assignment',
+          caption: {
+            tr: 'Vektörel Devre Şeması: Durum Atamada İkili Kodlama (Binary) vs. One-Hot Kodlama',
+            en: 'Vector Circuit Schematic: Binary vs. One-Hot State Assignment',
+          },
+          equation: 'Binary: ⌈log₂ M⌉ FF + Çözücü Mantık   |   One-Hot: M FF (1000..0001), Minimum Gecikme',
+          summary: {
+            tr: 'Binary kodlama minimum Flip-Flop kullanıp çıkış/sonraki durum çözücüsü isterken, One-Hot kodlama her durum için 1 Flip-Flop ayırarak en yüksek hızı sağlar.',
+            en: 'Binary encoding minimizes Flip-Flop count at the cost of decoding logic, whereas One-Hot assigns 1 Flip-Flop per state for maximum speed.',
+          },
+          collapsible: true,
+          defaultOpen: true,
         },
       ],
       examTip: {

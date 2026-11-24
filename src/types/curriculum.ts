@@ -41,10 +41,70 @@ export interface StepFlowDiagram {
   steps: { label: LocalizedText; detail: LocalizedText; badge?: LocalizedText }[];
 }
 
+export type CurriculumDiagramId =
+  | 'binary-grouping-bus'
+  | 'binary-addition-slice'
+  | 'twos-complement-overflow'
+  | 'binary-gray-converter'
+  | 'timing-waveform-gates'
+  | 'demorgan-bubble-push'
+  | 'universal-nand-nor-gates'
+  | 'all-standard-gates'
+  | 'two-level-sop-pos'
+  | 'kmap-minimization-gates'
+  | 'and-or-to-nand-nand'
+  | 'multilevel-bubble-pushing'
+  | 'parity-xor-circuits'
+  | 'half-full-adder-inner'
+  | 'ripple-carry-adder-4bit'
+  | 'adder-subtractor-4bit'
+  | 'midterm-gate-delay-recap'
+  | 'bcd-adder-block'
+  | 'comparator-2bit-logic'
+  | 'decoder-2to4-inner'
+  | 'decoder-3to8-from-2to4'
+  | 'priority-encoder-4to2'
+  | 'mux-4to1-inner'
+  | 'tristate-shared-bus'
+  | 'sr-latch-nor-vs-nand'
+  | 'gated-d-latch'
+  | 'master-slave-dff'
+  | 'dff-to-jk-t-conversion'
+  | 'sequential-timing-tpd'
+  | 'mealy-vs-moore-arch'
+  | 'state-reduction-flow'
+  | 'binary-vs-onehot-assignment'
+  | 'synthesis-6step-pipeline'
+  | 'sequence-detector-101'
+  | 'jk-gray-counter-schematic'
+  | 'parallel-load-register-4bit'
+  | 'universal-shift-register-cell'
+  | 'ripple-counter-4bit'
+  | 'sync-counter-4bit'
+  | 'ring-vs-johnson-counter'
+  | 'ram-cell-1bit'
+  | 'memory-block-diagram'
+  | 'rom-4x4-matrix'
+  | 'pld-prom-pal-pla'
+  | 'fpga-clb-cell'
+  | 'rtl-datapath-control'
+  | 'asm-chart-symbols';
+
+export interface SchematicDiagramData {
+  kind: 'schematic';
+  diagramId: CurriculumDiagramId;
+  caption: LocalizedText;
+  equation?: LocalizedText;
+  summary?: LocalizedText;
+  collapsible?: boolean;
+  defaultOpen?: boolean;
+}
+
 export type VisualDiagramData =
   | VisualTableDiagram
   | PositionalBreakdownDiagram
-  | StepFlowDiagram;
+  | StepFlowDiagram
+  | SchematicDiagramData;
 
 export interface VisualSection {
   id: string;

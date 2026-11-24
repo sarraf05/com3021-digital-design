@@ -72,9 +72,13 @@ export interface TimingDiagramToolSession {
 }
 
 export interface StateMachineToolSession {
-  currentState: 'S0' | 'S1' | 'S2' | 'S3';
+  presetId?: 'dff-analysis' | 'mealy-2ff' | 'moore-101';
+  currentState: string;
   lastInput: 0 | 1;
+  lastInputKey?: string;
   ffMode: 'D' | 'JK';
+  tableFormat?: 'list' | '2d';
+  calcStatesCount?: number;
   history: string[];
 }
 

@@ -137,6 +137,21 @@ export const week5: WeekModule = {
             ],
           ],
         },
+        {
+          kind: 'schematic',
+          diagramId: 'kmap-minimization-gates',
+          caption: {
+            tr: 'Vektörel Devre Şeması: 3-Değişkenli K-Map Gruplamasından Minimum Lojik Devreye',
+            en: 'Vector Circuit Schematic: From 3-Variable K-Map Grouping to Minimal Gate Circuit',
+          },
+          equation: "F(A, B, C) = Σm(1, 2, 3, 5, 7) = A'B + C",
+          summary: {
+            tr: 'K-Map üzerinde 4\'lü C grubu ve 2\'li A\'B grubu seçilerek 5 terimli kanonik ifade yalnızca 3 kapılı (NOT + AND + OR) minimum devreye indirgenir.',
+            en: 'Selecting the 4-cell C quad and 2-cell A\'B pair reduces a 5-minterm canonical sum to a minimal 3-gate circuit (NOT + AND + OR).',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
       ],
       examTip: {
         tr: 'Gruplama yaparken bir hücreyi birden fazla gruba dahil etmek (overlapping) kesinlikle serbesttir ve çoğu zaman diğer grupları 2\'liden 4\'lüye veya 4\'lüden 8\'liye büyütmek için gereklidir!',

@@ -209,6 +209,21 @@ export const week4: WeekModule = {
             ],
           ],
         },
+        {
+          kind: 'schematic',
+          diagramId: 'two-level-sop-pos',
+          caption: {
+            tr: 'Vektörel Devre Şeması: İki Seviyeli Standard SOP (AND-OR) vs. Standard POS (OR-AND)',
+            en: 'Vector Circuit Schematic: Two-Level Standard SOP (AND-OR) vs. Standard POS (OR-AND)',
+          },
+          equation: "SOP: F = A'B + AC (AND → OR)   |   POS: F = (A + B)(A' + C) (OR → AND)",
+          summary: {
+            tr: 'Standart SOP ve POS devrelerinde girişten çıkışa kadar tüm yollar tam 2 kapı seviyesinden (2·t_pd) geçer.',
+            en: 'In both Standard SOP and Standard POS circuits, every path from inputs to output passes through exactly two gate levels (2·t_pd).',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
       ],
       examTip: {
         tr: 'Tek bir literal veya tek başına duran bir değişken (ör. F = A + BC) hem SOP hem de POS yapısına uyumlu görünebilir, ancak genel tanımıyla çarpımların toplamı olduğundan Standard SOP olarak sınıflandırılır.',
@@ -280,6 +295,21 @@ export const week4: WeekModule = {
               { tr: 'Evet: (x⊙y)⊙z = x⊙(y⊙z)', en: 'Yes: (x⊙y)⊙z = x⊙(y⊙z)' },
             ],
           ],
+        },
+        {
+          kind: 'schematic',
+          diagramId: 'all-standard-gates',
+          caption: {
+            tr: 'Vektörel Devre Kütüphanesi: 8 Temel Mantık Kapısı Sembolü ve Boole Denklemleri',
+            en: 'Vector Gate Reference: All 8 Standard Logic Gate Symbols & Boolean Equations',
+          },
+          equation: 'Buffer, NOT, AND, OR, NAND, NOR, XOR, XNOR',
+          summary: {
+            tr: 'IEEE/ANSI standart lojik kapı gövdeleri, çıkış tümleyen baloncukları ve her bir kapının iki girişli cebirsel tanımı.',
+            en: 'Standard IEEE/ANSI logic gate shapes, output inversion bubbles, and Boolean equations for each primitive gate.',
+          },
+          collapsible: true,
+          defaultOpen: true,
         },
       ],
       examTip: {

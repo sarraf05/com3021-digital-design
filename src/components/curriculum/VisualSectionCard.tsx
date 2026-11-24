@@ -11,6 +11,7 @@ import { useSession } from '../../context/SessionContext';
 import { t, UI_STRINGS } from '../../i18n/translations';
 import { WidgetRenderer } from '../widgets/WidgetRenderer';
 import { FormattedInline, FormattedProse } from './FormattedText';
+import { CurriculumDiagram } from '../CurriculumDiagrams';
 
 interface VisualSectionCardProps {
   section: VisualSection;
@@ -230,6 +231,9 @@ export const VisualSectionCard: React.FC<VisualSectionCardProps> = ({
                 ))}
               </div>
             </div>
+          )}
+          {diagram.kind === 'schematic' && (
+            <CurriculumDiagram schematic={diagram} lang={lang} />
           )}
         </React.Fragment>
       ))}

@@ -80,6 +80,36 @@ export const week14: WeekModule = {
             ['1', '1', { tr: 'Paralel Yükle (Parallel Load)', en: 'Parallel Load' }, { tr: 'I₃ = Harici Paralel Giriş (Iᵢ)', en: 'I₃ = External Parallel Input (Iᵢ)' }],
           ],
         },
+        {
+          kind: 'schematic',
+          diagramId: 'parallel-load-register-4bit',
+          caption: {
+            tr: 'Vektörel Devre Şeması: 2×1 MUX Korumalı 4-Bit Parallel-Load Register (Clock Gating Yok)',
+            en: 'Vector Circuit Schematic: 4-Bit Parallel-Load Register with 2×1 MUX Control (No Clock Gating)',
+          },
+          equation: 'Load = 0 ⇒ Dᵢ = Aᵢ (Hold)   |   Load = 1 ⇒ Dᵢ = Iᵢ (Parallel Load)',
+          summary: {
+            tr: 'Ortak Clock hattı bozulmadan her Flip-Flop önündeki 2×1 MUX üzerinden tutma (Hold) veya paralel yükleme (Load) seçilir.',
+            en: 'Keeping the Clock tree clean, a 2×1 MUX ahead of each Flip-Flop selects between holding Aᵢ (Load=0) or loading Iᵢ (Load=1).',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
+        {
+          kind: 'schematic',
+          diagramId: 'universal-shift-register-cell',
+          caption: {
+            tr: 'Vektörel Devre Şeması: 4-Bit SISO Kaydırmalı Yazmaç ve Universal Shift Register Hücresi',
+            en: 'Vector Circuit Schematic: 4-Bit SISO Shift Register & Universal Shift Register Bit Cell',
+          },
+          equation: 'S₁S₀: 00 = Hold,  01 = Shift Right,  10 = Shift Left,  11 = Parallel Load',
+          summary: {
+            tr: 'Her bit hücresindeki 4×1 MUX kendi Qᵢ değerini, sol/sağ komşu çıkışlarını veya paralel girişi Dᵢ ucuna yönlendirir.',
+            en: 'Each stage’s 4×1 MUX routes own Qᵢ, left/right neighbor bits, or parallel data Iᵢ into Dᵢ under S₁S₀ control.',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
       ],
       summaryRule: {
         tr: 'Universal Shift Register mod seçimi (S₁S₀): 00 (Tut / Hold), 01 (Sağa Kaydır / ÷2), 10 (Sola Kaydır / ×2), 11 (Paralel Yükle). Sayaçlarda ise Ring Counter n FF ile n durum; Johnson Counter Q\'ₙ₋₁ geri beslemesiyle 2n durum üretir.',
@@ -134,6 +164,36 @@ export const week14: WeekModule = {
               'T_Q0=1, T_Q1=Q₃\'Q₀, T_Q2=Q₁Q₀, T_Q3=Q₂Q₁Q₀+Q₃Q₀, Carry y=Q₃Q₀',
             ],
           ],
+        },
+        {
+          kind: 'schematic',
+          diagramId: 'ripple-counter-4bit',
+          caption: {
+            tr: 'Vektörel Devre & Zamanlama Şeması: 4-Bit Asenkron (Ripple) Sayıcı ve Kümülatif Gecikme',
+            en: 'Vector Circuit & Timing Schematic: 4-Bit Asynchronous (Ripple) Counter & Cumulative Delay',
+          },
+          equation: 't_total(worst) = N · t_pd   (0111 → 1000 geçişinde dalga birikimi)',
+          summary: {
+            tr: 'Her Flip-Flop saatini bir önceki çıkıştan aldığı için değişimler dalga gibi yayılır ve geçici hatalı kodlara (glitch) yol açar.',
+            en: 'Because each Flip-Flop is clocked by the preceding stage, bit transitions ripple sequentially and cause transient glitch states.',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
+        {
+          kind: 'schematic',
+          diagramId: 'sync-counter-4bit',
+          caption: {
+            tr: 'Vektörel Devre Şeması: Count Enable (E) Zincirli 4-Bit Senkron İkili Sayıcı',
+            en: 'Vector Circuit Schematic: 4-Bit Synchronous Binary Counter with Enable Chain',
+          },
+          equation: 'T₀ = E,   T₁ = E·Q₀,   T₂ = E·Q₀·Q₁,   T₃ = E·Q₀·Q₁·Q₂,   Carry = E·Q₀·Q₁·Q₂·Q₃',
+          summary: {
+            tr: 'Tüm T Flip-Flop\'lar ortak Clock ile paralel tetiklenir; yalnızca alt bitlerin tamamı 1 olduğunda ilgili AND kapısı bir üst biti tersler.',
+            en: 'All T Flip-Flops share a common Clock and update simultaneously; each stage toggles only when Enable and all lower bits equal 1.',
+          },
+          collapsible: true,
+          defaultOpen: true,
         },
       ],
       widget: 'TimingDiagramViewer',
@@ -191,10 +251,151 @@ export const week14: WeekModule = {
             ],
           ],
         },
+        {
+          kind: 'schematic',
+          diagramId: 'ring-vs-johnson-counter',
+          caption: {
+            tr: 'Vektörel Devre Şeması: 4-Bit Ring Counter (D₀ = Q₃) vs. Johnson Counter (D₀ = Q₃\')',
+            en: 'Vector Circuit Schematic: 4-Bit Ring Counter (D₀ = Q₃) vs. Johnson Counter (D₀ = Q₃\')',
+          },
+          equation: "Ring: N durum (D₀ = Q₃)   |   Johnson: 2N durum (D₀ = Q₃', her durum 2-girişli AND ile çözülür)",
+          summary: {
+            tr: 'Normal geri besleme (Q₃) n durumluk tek-sıcak döngü üretirken, tümleyen geri besleme (Q₃\') aynı donanımla 2n durumluk Johnson döngüsü oluşturur.',
+            en: 'True feedback (Q₃) circulates a single bit across n states, while inverted feedback (Q₃\') doubles the cycle to 2n easily decoded states.',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
       ],
       examTip: {
         tr: "Johnson Counter'daki herhangi bir durumu tek başına algılamak için kaç girişli AND kapısı gerekir? Cevap her zaman yalnızca 2-girişli AND kapısıdır! Örneğin 4-bitlik sistemde 1110 durumunu algılamak için Q₂·Q₃' (1→0 sınırı), 0000 için Q₀'·Q₃' ve 1111 için Q₀·Q₃ yeterlidir.",
         en: "How many inputs does an AND gate need to decode any single state of an n-bit Johnson Counter? Always just a 2-input AND gate! For example, in a 4-bit Johnson counter, Q₂·Q₃' (the 1→0 boundary) uniquely decodes 1110, Q₀'·Q₃' decodes 0000, and Q₀·Q₃ decodes 1111.",
+      },
+    },
+    {
+      id: 'w14-s4',
+      title: {
+        tr: '4. İleri Mimari Özeti: Bellek (RAM/ROM), PLD/FPGA ve RTL / ASM Diyagramları',
+        en: '4. Advanced Architecture Reference: Memory (RAM/ROM), PLD/FPGA & RTL / ASM',
+      },
+      explanation: {
+        tr: 'Dijital sistem tasarımında yazmaç ve sayıcıların bir adım ötesi büyük bellek dizileri (RAM/ROM), programlanabilir lojik mimariler (PROM, PAL, PLA, FPGA) ve veri yolu–kontrol ünitesi (RTL & ASM) tasarımıdır. Aşağıdaki vektörel blok şemaları bellek hücresinden FPGA mantık bloğuna ve ASM akış sembollerine kadar tüm ileri mimari yapı taşlarını görselleştirir.',
+        en: 'Beyond registers and counters, complete digital systems integrate Memory arrays (RAM/ROM), Programmable Logic Devices (PROM, PAL, PLA, FPGA), and Datapath–Control architectures (RTL & ASM). The vector schematics below illustrate these core hardware building blocks from a single 1-bit RAM cell up to FPGA CLBs and ASM charts.',
+      },
+      diagrams: [
+        {
+          kind: 'schematic',
+          diagramId: 'ram-cell-1bit',
+          caption: {
+            tr: 'Vektörel Devre Şeması: 1-Bit Statik RAM Hücresi (Select, Read/Write, SR Latch & Three-State)',
+            en: 'Vector Circuit Schematic: 1-Bit Static RAM Cell (Select, Read/Write, SR Latch & Three-State)',
+          },
+          equation: 'Select = 1, R/W = 0 ⇒ Write (S/R)   |   Select = 1, R/W = 1 ⇒ Read (Q → Data Out)',
+          summary: {
+            tr: 'Select ve R/W kontrol hatları yazma kapılarını veya çıkış Three-State tamponunu açarak tek bir SR mandal üzerinden okuma/yazma yapar.',
+            en: 'Select and R/W control gates enable either the write inputs or the output Three-State buffer around a core SR latch.',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
+        {
+          kind: 'schematic',
+          diagramId: 'memory-block-diagram',
+          caption: {
+            tr: 'Vektörel Blok Şema: 2ᵏ × n RAM Bellek Modülü (Adres, Veri Giriş/Çıkış ve R/W Kontrolü)',
+            en: 'Vector Block Diagram: 2ᵏ × n RAM Memory Unit (Address, Data In/Out & R/W Control)',
+          },
+          equation: 'Kapasite = 2ᵏ Sözcük × n Bit   (Örn: 1024 × 16 = 2¹⁰ × 16 bit)',
+          summary: {
+            tr: 'k-bitlik Adres hattı 2ᵏ sözcükten birini seçer; Memory Enable ve R/W sinyalleri n-bitlik veri aktarım yönünü belirler.',
+            en: 'A k-bit Address bus selects one of 2ᵏ words while Memory Enable and R/W govern the n-bit read/write data path.',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
+        {
+          kind: 'schematic',
+          diagramId: 'rom-4x4-matrix',
+          caption: {
+            tr: 'Vektörel Devre Şeması: 4×4 ROM Matrisi (2-to-4 Decoder + Programlanabilir OR Bağlantıları)',
+            en: 'Vector Circuit Schematic: 4×4 ROM Matrix (2-to-4 Decoder + Programmable OR Matrix)',
+          },
+          equation: 'Sabit AND Dizisi (Decoder) + Programlanabilir OR Dizisi ⇒ Çoklu Fonksiyon Üretimi',
+          summary: {
+            tr: '2-to-4 Decoder tüm 4 mintermi üretir; yatay sözcük hatlarındaki sigorta/bağlantı noktaları (×) her çıkış sütununda istenen Σm fonksiyonunu sabitler.',
+            en: 'A 2-to-4 Decoder produces all 4 minterms, and programmed links (×) along word lines sum selected minterms into each output column.',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
+        {
+          kind: 'schematic',
+          diagramId: 'pld-prom-pal-pla',
+          caption: {
+            tr: 'Vektörel Mimari Şeması: PROM, PAL ve PLA Programlanabilir Lojik Dizilerinin Karşılaştırması',
+            en: 'Vector Architecture Diagram: Comparing PROM, PAL & PLA Programmable Arrays',
+          },
+          equation: 'PROM: Sabit AND + Prog. OR   |   PAL: Prog. AND + Sabit OR   |   PLA: İkisi de Prog.',
+          summary: {
+            tr: 'PROM kalıcı bellek/minterm toplamı, PAL hızlı sabit OR çıkışları, PLA ise paylaşılan çarpım terimleriyle en yüksek esnekliği sunar.',
+            en: 'PROM fixes ANDs (Decoder), PAL fixes ORs for speed, and PLA allows programming both AND and OR planes for shared product terms.',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
+        {
+          kind: 'schematic',
+          diagramId: 'fpga-clb-cell',
+          caption: {
+            tr: 'Vektörel Mimari Şeması: FPGA Configurable Logic Block (LUT + D Flip-Flop + 2×1 MUX)',
+            en: 'Vector Architecture Diagram: FPGA Configurable Logic Block (LUT + D Flip-Flop + 2×1 MUX)',
+          },
+          equation: '4-Input LUT (16×1 SRAM) → [Doğrudan Birleşik veya D-FF Kayıtlı Çıkış]',
+          summary: {
+            tr: 'Her FPGA mantık hücresi herhangi bir 4-değişkenli fonksiyonu LUT belleğinde tutar ve çıkış MUX\'u ile saat senkronizasyonunu seçer.',
+            en: 'Each FPGA slice stores any 4-variable truth table inside a 16-bit SRAM LUT and selects combinational or registered output via a MUX.',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
+        {
+          kind: 'schematic',
+          diagramId: 'rtl-datapath-control',
+          caption: {
+            tr: 'Vektörel Mimari Şeması: RTL Sistemi — Datapath (Veri Yolu) ve Control Unit (FSM) Etkileşimi',
+            en: 'Vector Architecture Diagram: RTL System — Datapath & Control Unit (FSM) Interaction',
+          },
+          equation: 'Control Signals (Load, Shift, Sel) → Datapath   |   Status Flags (Zero, Carry) → FSM',
+          summary: {
+            tr: 'Kontrol birimi (FSM) durum bayraklarını okuyarak yazmaç, MUX ve ALU üzerindeki kontrol sinyallerini saat adımlarıyla yönetir.',
+            en: 'The Control FSM reads status flags from the Datapath and issues clocked control signals to registers, MUXes, and the ALU.',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
+        {
+          kind: 'schematic',
+          diagramId: 'asm-chart-symbols',
+          caption: {
+            tr: 'Vektörel Akış Şeması: Algorithmic State Machine (ASM) Sembolleri ve Tek ASM Bloğu',
+            en: 'Vector Flowchart Diagram: Algorithmic State Machine (ASM) Symbols & Single ASM Block',
+          },
+          equation: 'State Box (Moore) · Decision Box (Koşul) · Conditional Box (Mealy)',
+          summary: {
+            tr: 'Bir ASM bloğu tek bir saat periyodunu temsil eder: dikdörtgen durum kutusu, eşkenar dörtgen karar kutusu ve oval koşullu çıkış kutusundan oluşur.',
+            en: 'One ASM block spans a single clock cycle, combining a rectangular State Box, diamond Decision Box, and oval Conditional Output Box.',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
+      ],
+      summaryRule: {
+        tr: 'PROM = Sabit AND (Decoder) + Programlanabilir OR; PAL = Programlanabilir AND + Sabit OR; PLA = Her iki katman da programlanabilir. FPGA hücresi ise LUT (Look-Up Table) + D Flip-Flop + MUX üçlüsünden oluşur.',
+        en: 'PROM = Fixed AND (Decoder) + Programmable OR; PAL = Programmable AND + Fixed OR; PLA = Both planes programmable. An FPGA CLB pairs an SRAM LUT with a D Flip-Flop and output MUX.',
+      },
+      examTip: {
+        tr: 'ASM (Algorithmic State Machine) bloklarında State Box içindeki RTL işlemleri saat darbesiyle gerçekleşen Moore çıkışlarıdır; Decision Box sonrasındaki oval Conditional Output kutuları ise girişe bağlı Mealy çıkışlarıdır.',
+        en: 'In an ASM block, RTL operations inside the State Box are synchronous Moore actions, whereas actions inside an oval Conditional Box following a Decision Box represent Mealy outputs.',
       },
     },
   ],

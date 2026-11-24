@@ -144,6 +144,21 @@ export const week8: WeekModule = {
             ],
           ],
         },
+        {
+          kind: 'schematic',
+          diagramId: 'midterm-gate-delay-recap',
+          caption: {
+            tr: 'Vektörel Devre Şeması: 2-Seviyeli Sabit Gecikme (2·t_pd) vs. 4-Bit Ripple Carry Kritik Yolu',
+            en: 'Vector Circuit Schematic: Constant 2-Level Gate Delay (2·t_pd) vs. 4-Bit Ripple Carry Critical Path',
+          },
+          equation: '2-Level NAND-NAND: 2·t_pd   |   4-Bit RCA: 3·t_carry + t_sum',
+          summary: {
+            tr: 'İki seviyeli birleşik ağlarda gecikme giriş sayısından bağımsız sabit 2·t_pd iken, Ripple Carry Adder’da kritik yol bit genişliğiyle doğrusal büyür.',
+            en: 'Two-level combinational networks stay fixed at 2·t_pd regardless of fan-in, whereas Ripple Carry Adder delay grows linearly with bit width.',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
       ],
       summaryRule: {
         tr: 'Vize Özeti: Dualite yalnızca (· ↔ +) ve (0 ↔ 1) değiştirir (değişken terslenmez); Signed Overflow V = C_in ⊕ C_out yalnızca aynı işaretli toplamalarda oluşur; K-Map\'te 1\'ler SOP\'u, 0\'lar F\' (POS için DeMorgan gerekir) verir.',

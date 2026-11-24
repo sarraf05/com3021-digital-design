@@ -93,6 +93,36 @@ export const week11: WeekModule = {
             ],
           ],
         },
+        {
+          kind: 'schematic',
+          diagramId: 'sr-latch-nor-vs-nand',
+          caption: {
+            tr: 'Vektörel Devre Şeması: Çapraz Bağlı NOR (Active-High) vs. NAND (Active-Low) SR Latch',
+            en: 'Vector Circuit Schematic: Cross-Coupled NOR (Active-High) vs. NAND (Active-Low) SR Latch',
+          },
+          equation: "NOR: Q = (R + Q')', S=R=1 Yasak   |   NAND: Q = (S' · Q')', S'=R'=0 Yasak",
+          summary: {
+            tr: 'Çapraz geri besleme yolu 1-bitlik durumu kilitler; NOR yapısında R üstte ve S altta, NAND S\'R\' yapısında ise S\' üstte ve R\' altta bağlanır.',
+            en: 'Cross-coupled feedback stores 1 bit; NOR latches place R on top and S on bottom, whereas NAND S\'R\' latches place S\' on top and R\' on bottom.',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
+        {
+          kind: 'schematic',
+          diagramId: 'gated-d-latch',
+          caption: {
+            tr: 'Vektörel Devre Şeması: Gated D Latch (4×NAND + Inverter ile Şeffaf Mandal)',
+            en: 'Vector Circuit Schematic: Gated D Latch (4×NAND + Inverter Transparent Latch)',
+          },
+          equation: 'En = 1 ⇒ Q = D (Transparent)   |   En = 0 ⇒ Q(t+1) = Q(t) (Hold)',
+          summary: {
+            tr: 'D ve D\' girişleri En sinyaliyle kapılanarak SR\'deki yasak durum yok edilir; ancak En=1 süresince D değişimleri doğrudan Q\'ya yansır.',
+            en: 'Gating complementary D and D\' inputs with En eliminates the forbidden state, though Q tracks D transparently whenever En = 1.',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
       ],
       summaryRule: {
         tr: 'Üç Temel Flip-Flop Karakteristik Denklemi: D FF için Q(t+1) = D; JK FF için Q(t+1) = J·Q\' + K\'·Q; T FF için Q(t+1) = T ⊕ Q. JK FF\'nin J=K=1 durumu mevcut çıkışı tersleyerek SR Latch\'teki yasak durumu ortadan kaldırır.',
@@ -136,6 +166,21 @@ export const week11: WeekModule = {
             ['T FF', 'T = 0 / T = 1', "Q(t) / Q'(t)", { tr: 'Koru (Hold) / Tersle (Toggle)', en: 'No Change (Hold) / Toggle' }],
           ],
         },
+        {
+          kind: 'schematic',
+          diagramId: 'master-slave-dff',
+          caption: {
+            tr: 'Vektörel Devre Şeması: Master-Slave D Flip-Flop ve Kenar Tetikleme (Edge Triggering)',
+            en: 'Vector Circuit Schematic: Master-Slave D Flip-Flop & Edge Triggering',
+          },
+          equation: 'Q(t+1) = D  (Yalnızca Clock kenarında örneklenir)',
+          summary: {
+            tr: 'Master mandal saat tersiyle (CLK\'), Slave mandal ise CLK ile sürülür; böylece giriş ve çıkış birbirinden tamamen yalıtılır.',
+            en: 'Master latch runs on CLK\' while Slave latch runs on CLK, isolating input from output so Q updates strictly on a clock edge.',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
       ],
       widget: 'TimingDiagramViewer',
       widgetConfig: {
@@ -178,6 +223,21 @@ export const week11: WeekModule = {
             ['1 → 0', '0', 'X', '1', '1', { tr: '0 ol: Reset (0,1) veya Toggle (1,1) → J = X', en: 'Become 0: Reset (0,1) or Toggle (1,1) → J = X' }],
             ['1 → 1', '1', 'X', '0', '0', { tr: '1 kal: Hold (0,0) veya Set (1,0) → J = X', en: 'Stay 1: Hold (0,0) or Set (1,0) → J = X' }],
           ],
+        },
+        {
+          kind: 'schematic',
+          diagramId: 'dff-to-jk-t-conversion',
+          caption: {
+            tr: 'Vektörel Devre Şeması: D Flip-Flop Kullanarak JK ve T Flip-Flop Elde Etme',
+            en: 'Vector Circuit Schematic: Converting a D Flip-Flop into JK and T Flip-Flops',
+          },
+          equation: "JK: D = J·Q' + K'·Q   |   T: D = T ⊕ Q",
+          summary: {
+            tr: 'D Flip-Flop girişine uygun birleşik mantık ve Q/Q\' geri beslemesi eklenerek hem JK hem T Flip-Flop davranışı eksiksiz sentezlenir.',
+            en: 'Adding combinational feedback logic from Q/Q\' to the D input converts a standard D Flip-Flop into either a JK or T Flip-Flop.',
+          },
+          collapsible: true,
+          defaultOpen: true,
         },
       ],
       examTip: {

@@ -179,6 +179,21 @@ export const week1: WeekModule = {
             },
           ],
         },
+        {
+          kind: 'schematic',
+          diagramId: 'binary-grouping-bus',
+          caption: {
+            tr: 'Vektörel Devre / Veri Yolu Şeması: 3-Bit (Octal) ve 4-Bit (Hex) Blok Gruplama',
+            en: 'Vector Bus Diagram: 3-Bit (Octal) & 4-Bit (Hex) Block Grouping',
+          },
+          equation: '(1101101.1011)₂ = (155.54)₈ = (6D.B)₁₆',
+          summary: {
+            tr: 'Radix noktasından dışa doğru 3\'lü (8 = 2³) veya 4\'lü (16 = 2⁴) gruplama yapılır; eksik uç bitleri sıfırla (0) doldurulur.',
+            en: 'Group outward from the radix point in 3-bit (8 = 2³) or 4-bit (16 = 2⁴) blocks, padding outer ends with zeros (0).',
+          },
+          collapsible: true,
+          defaultOpen: true,
+        },
       ],
       widget: 'BaseComplementVisualizer',
       widgetConfig: {
@@ -243,6 +258,21 @@ export const week1: WeekModule = {
               },
             },
           ],
+        },
+        {
+          kind: 'schematic',
+          diagramId: 'binary-addition-slice',
+          caption: {
+            tr: 'Vektörel Devre Şeması: 4-Bit İkili Toplamada Elde (Carry) Akışı',
+            en: 'Vector Circuit Schematic: Carry Propagation in 4-Bit Binary Addition',
+          },
+          equation: '0101₂ (5) + 0011₂ (3) = 1000₂ (8),  C₄ = 0',
+          summary: {
+            tr: 'LSB\'den (FA₀) MSB\'ye (FA₃) ilerleyen her elde (C₁, C₂, C₃) sol komşu basamağa aktarılır ve son toplam bitlerini üretir.',
+            en: 'Each carry bit (C₁, C₂, C₃) ripples leftward from LSB (FA₀) to MSB (FA₃), computing the final sum bits.',
+          },
+          collapsible: true,
+          defaultOpen: true,
         },
       ],
       examTip: {

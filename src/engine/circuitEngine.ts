@@ -47,6 +47,14 @@ function evaluateCombinationalNode(node: CircuitNode): Record<string, LogicValue
       return { out: ((i.a ?? 0) ^ (i.b ?? 0) ^ (i.c ?? 0)) === 1 ? 1 : 0 };
     case 'XNOR3':
       return { out: ((i.a ?? 0) ^ (i.b ?? 0) ^ (i.c ?? 0)) === 0 ? 1 : 0 };
+    case 'AND4':
+      return { out: (i.a ?? 0) & (i.b ?? 0) & (i.c ?? 0) & (i.d ?? 0) ? 1 : 0 };
+    case 'OR4':
+      return { out: (i.a ?? 0) | (i.b ?? 0) | (i.c ?? 0) | (i.d ?? 0) ? 1 : 0 };
+    case 'NAND4':
+      return { out: (i.a ?? 0) & (i.b ?? 0) & (i.c ?? 0) & (i.d ?? 0) ? 0 : 1 };
+    case 'NOR4':
+      return { out: (i.a ?? 0) | (i.b ?? 0) | (i.c ?? 0) | (i.d ?? 0) ? 0 : 1 };
     case 'HALF_ADDER': {
       const a = i.a ?? 0;
       const b = i.b ?? 0;
@@ -157,6 +165,27 @@ function evaluateCombinationalNode(node: CircuitNode): Record<string, LogicValue
         d5: idx === 5 ? 1 : 0,
         d6: idx === 6 ? 1 : 0,
         d7: idx === 7 ? 1 : 0,
+      };
+    }
+    case 'IC_74155': {
+      const a = i.a ?? 0;
+      const b = i.b ?? 0;
+      const c1 = i.c1 ?? 0;
+      const g1 = i.g1 ?? 0;
+      const c2 = i.c2 ?? 0;
+      const g2 = i.g2 ?? 0;
+      const index = (b << 1) | a;
+      const dec1Active = g1 === 0 && c1 === 1;
+      const dec2Active = g2 === 0 && c2 === 0;
+      return {
+        y1_0: dec1Active && index === 0 ? 0 : 1,
+        y1_1: dec1Active && index === 1 ? 0 : 1,
+        y1_2: dec1Active && index === 2 ? 0 : 1,
+        y1_3: dec1Active && index === 3 ? 0 : 1,
+        y2_0: dec2Active && index === 0 ? 0 : 1,
+        y2_1: dec2Active && index === 1 ? 0 : 1,
+        y2_2: dec2Active && index === 2 ? 0 : 1,
+        y2_3: dec2Active && index === 3 ? 0 : 1,
       };
     }
     case 'ENCODER_4TO2': {

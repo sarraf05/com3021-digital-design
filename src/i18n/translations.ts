@@ -28,6 +28,11 @@ export const COMPONENT_LABELS_EN: Partial<Record<ComponentType, string>> = {
   NOR3: '3-Input NOR',
   XOR3: '3-Input XOR',
   XNOR3: '3-Input XNOR',
+  AND4: '4-Input AND',
+  OR4: '4-Input OR',
+  NAND4: '4-Input NAND',
+  NOR4: '4-Input NOR',
+  IC_74155: '74155 Dual Decoder',
   CUSTOM_IC: 'Custom IC',
 };
 
@@ -50,6 +55,10 @@ export const COMPONENT_DESCRIPTIONS_EN: Record<ComponentType, string> = {
   NOR3: "3-input universal NOR gate: (A + B + C)'.",
   XOR3: 'Odd parity: outputs 1 when an odd number of inputs are 1 (A ⊕ B ⊕ C).',
   XNOR3: "Even parity: outputs 1 when an even number of inputs are 1 (A ⊕ B ⊕ C)'.",
+  AND4: 'Outputs 1 only when all four inputs are 1 (A · B · C · D).',
+  OR4: 'Outputs 1 when at least one of the four inputs is 1 (A + B + C + D).',
+  NAND4: "4-input universal NAND gate: (A · B · C · D)'.",
+  NOR4: "4-input universal NOR gate: (A + B + C + D)'.",
   MUX_2X1: 'Routes I0 when S0=0, or I1 when S0=1 to output Y.',
   MUX_4X1: 'Selects one of 4 data inputs (I0..I3) via S1S0 to output Y.',
   MUX_8X1: 'Selects one of 8 data inputs (I0..I7) via S2S1S0 to output Y.',
@@ -58,6 +67,7 @@ export const COMPONENT_DESCRIPTIONS_EN: Record<ComponentType, string> = {
   DEMUX_1TO8: 'Routes input D to one of 8 outputs (Y0..Y7) via S2S1S0.',
   DECODER_2TO4: 'When Active-High E=1 (default E=1 if unwired), activates minterm D0..D3 for A1A0.',
   DECODER_3TO8: 'When Active-High E=1 (default E=1 if unwired), activates minterm D0..D7 for A2A1A0.',
+  IC_74155: 'Dual 2-to-4 Active-Low Decoder/DEMUX (1G=0 & 1C=1 → 1Y; 2G=0 & 2C=0 → 2Y).',
   ENCODER_4TO2: 'Encodes 4 active-high lines (D0..D3) into a 2-bit binary code (A1A0).',
   ENCODER_8TO3: 'Encodes 8 active-high lines (D0..D7) into a 3-bit binary code (A2A1A0).',
   PRIORITY_ENCODER_4TO2: 'Priority D3 > D2 > D1 > D0; produces valid bit V = D0+D1+D2+D3.',
@@ -75,6 +85,7 @@ export const CATEGORY_LABELS: Record<ComponentCategory, { tr: string; en: string
   Çıkışlar: { tr: 'Çıkışlar', en: 'Outputs' },
   '2-Girişli Kapılar': { tr: '2-Girişli Kapılar', en: '2-Input Gates' },
   '3-Girişli Kapılar': { tr: '3-Girişli Kapılar', en: '3-Input Gates' },
+  '4-Girişli Kapılar': { tr: '4-Girişli Kapılar', en: '4-Input Gates' },
   'MSI Bloklar': { tr: 'MSI Bloklar', en: 'MSI Blocks' },
   'Ardışıl Elemanlar': { tr: 'Ardışıl Elemanlar', en: 'Flip-Flops' },
 };
@@ -281,7 +292,7 @@ export const UI_STRINGS = {
       remove: 'Çıkar',
       closeSelection: 'Seçimi Kapat',
       helpStrip:
-        'Pinlerden sürükleyin veya dokun-bağla yapın · Sağ tık / Uzun basma: Kapı değiştir/sil · Boşluktan sürükle: Kaydır',
+        'Bağlantı kurmak için bir pinden diğer pine tıklayın veya sürükleyin (Sağ tık: kapı değiştir / sil)',
       wiringModeActive:
         'Bağlantı modu aktif — Hedef pine dokunun (İptal: boşluğa tıkla)',
       locked: 'Kilitli',
@@ -296,6 +307,7 @@ export const UI_STRINGS = {
         Temel: 'Temel',
         '2-Giriş': '2-Giriş',
         '3-Giriş': '3-Giriş',
+        '4-Giriş': '4-Giriş',
         MSI: 'MSI',
         'Flip-Flop': 'Flip-Flop',
       },
@@ -352,21 +364,88 @@ export const UI_STRINGS = {
       pulseRow: 'Darbe',
       passBadge: 'DOĞRU',
       failBadge: 'HATALI',
+      presetCategories: {
+        arithmetic: 'Aritmetik',
+        universal: 'Evrensel Kapılar',
+        converters: 'Kod Dönüştürücü',
+        combinational: 'Kombinasyonel',
+        sequential: 'Ardışıl',
+        canvas: 'Genel',
+      },
       presets: {
         'half-adder': {
-          name: 'Half Adder (XOR + AND)',
-          description: 'Temel kapılarla kurulmuş 1-bit yarım toplayıcı devresi.',
+          name: 'Half Adder (Yarım Toplayıcı)',
+          shortName: 'Half Adder',
+          description: 'XOR + AND kapılarıyla 1-bit yarım toplayıcı devresi.',
+        },
+        'full-adder': {
+          name: 'Full Adder (Tam Toplayıcı)',
+          shortName: 'Full Adder',
+          description: 'Carry-In ve Carry-Out bağlantılı 1-bit tam toplayıcı.',
+        },
+        'full-subtractor': {
+          name: 'Full Subtractor (Tam Çıkarıcı)',
+          shortName: 'Full Subtractor',
+          description: 'Borç giriş/çıkışlı (Bin / Bout) tam çıkarıcı devresi.',
+        },
+        'nand-xor': {
+          name: 'XOR Kapısı (4× NAND)',
+          shortName: '4× NAND XOR',
+          description: 'Yalnızca 4 adet NAND kapısı ile kurulmuş XOR devresi.',
         },
         'nand-mux': {
           name: '2x1 MUX (NAND Yapısı)',
-          description: 'Sadece NAND ve NOT kapılarıyla 2-to-1 Multiplexer devresi.',
+          shortName: 'NAND 2x1 MUX',
+          description: 'Sadece NAND ve NOT kapılarıyla 2-to-1 Multiplexer.',
+        },
+        'bin-to-gray': {
+          name: 'Binary → Gray Code (4-Bit)',
+          shortName: 'Bin → Gray',
+          description: 'XOR kapılarıyla 4-bit Binary → Gray Code dönüştürücü.',
+        },
+        'gray-to-bin': {
+          name: 'Gray Code → Binary (4-Bit)',
+          shortName: 'Gray → Bin',
+          description: 'Ardışıl XOR zinciriyle 4-bit Gray → Binary dönüştürücü.',
+        },
+        'bcd-to-excess3': {
+          name: 'BCD → Excess-3 Dönüştürücü',
+          shortName: 'BCD → XS-3',
+          description: '4-bit BCD girişini Excess-3 koduna çeviren devre.',
+        },
+        'decoder-2to4': {
+          name: '2x4 Decoder (AND + NOT)',
+          shortName: '2x4 Decoder',
+          description: 'AND ve NOT kapılarıyla kurulmuş açık 2-to-4 Decoder şeması.',
+        },
+        'mux-4to1': {
+          name: '4x1 Multiplexer (MUX)',
+          shortName: '4x1 MUX',
+          description: '4 veri girişi (I0–I3) ve S1S0 seçicileriyle 4x1 MUX.',
+        },
+        'comparator-2bit': {
+          name: '2-Bit Magnitude Comparator',
+          shortName: '2-Bit Karşılaştırıcı',
+          description: 'A=B, A>B ve A<B çıkışlı 2-bit büyüklük karşılaştırıcı.',
+        },
+        'sr-latch': {
+          name: 'SR Latch (Çapraz NOR)',
+          shortName: 'SR Latch',
+          description: 'Çapraz bağlı NOR kapılarıyla temel bellek hücresi.',
+        },
+        'd-latch': {
+          name: 'D Latch (Enable Girişli)',
+          shortName: 'D Latch',
+          description: 'EN kontrollü NAND tabanlı şeffaf D Latch devresi.',
         },
         'tff-counter': {
           name: '2-Bit Sayaç (T-FF + 7-Seg)',
-          description: 'Clock ile tetiklenen T Flip-Flop sayıcı ve 7-Segment gösterge.',
+          shortName: '2-Bit Sayaç',
+          description: 'Clock ile tetiklenen T Flip-Flop sayıcı ve 7-Segment.',
         },
         empty: {
           name: 'Boş Çalışma Tuvali',
+          shortName: 'Boş Tuval',
           description: 'Sıfırdan kendi dijital devrenizi tasarlayın.',
         },
       },
@@ -678,7 +757,7 @@ export const UI_STRINGS = {
       remove: 'Remove',
       closeSelection: 'Close Selection',
       helpStrip:
-        'Drag from pins or tap-to-connect · Right-click / Long-press: Swap or remove · Drag canvas: Pan',
+        'Click or drag from one pin to another to connect (Right-click node: swap / remove)',
       wiringModeActive:
         'Wiring mode active — Tap target pin (Click empty space to cancel)',
       locked: 'Locked',
@@ -693,6 +772,7 @@ export const UI_STRINGS = {
         Temel: 'Basic',
         '2-Giriş': '2-Input',
         '3-Giriş': '3-Input',
+        '4-Giriş': '4-Input',
         MSI: 'MSI',
         'Flip-Flop': 'Flip-Flop',
       },
@@ -749,21 +829,88 @@ export const UI_STRINGS = {
       pulseRow: 'Pulse',
       passBadge: 'PASS',
       failBadge: 'FAIL',
+      presetCategories: {
+        arithmetic: 'Arithmetic',
+        universal: 'Universal Gates',
+        converters: 'Code Converters',
+        combinational: 'Combinational',
+        sequential: 'Sequential',
+        canvas: 'General',
+      },
       presets: {
         'half-adder': {
           name: 'Half Adder (XOR + AND)',
-          description: '1-bit half adder built with basic logic gates.',
+          shortName: 'Half Adder',
+          description: '1-bit half adder built with XOR + AND gates.',
+        },
+        'full-adder': {
+          name: 'Full Adder (Carry In/Out)',
+          shortName: 'Full Adder',
+          description: '1-bit full adder with A, B, Cin inputs and Sum, Cout outputs.',
+        },
+        'full-subtractor': {
+          name: 'Full Subtractor (Borrow In/Out)',
+          shortName: 'Full Subtractor',
+          description: '1-bit full subtractor with X, Y, Bin and Diff, Bout.',
+        },
+        'nand-xor': {
+          name: 'XOR Gate (4× NAND)',
+          shortName: '4× NAND XOR',
+          description: 'XOR gate implemented using only 4 NAND gates.',
         },
         'nand-mux': {
           name: '2x1 MUX (NAND Structure)',
+          shortName: 'NAND 2x1 MUX',
           description: '2-to-1 Multiplexer built using only NAND and NOT gates.',
+        },
+        'bin-to-gray': {
+          name: 'Binary → Gray Code (4-Bit)',
+          shortName: 'Bin → Gray',
+          description: '4-bit Binary to Gray Code converter using XOR gates.',
+        },
+        'gray-to-bin': {
+          name: 'Gray Code → Binary (4-Bit)',
+          shortName: 'Gray → Bin',
+          description: '4-bit Gray Code to Binary converter using cascaded XORs.',
+        },
+        'bcd-to-excess3': {
+          name: 'BCD → Excess-3 Converter',
+          shortName: 'BCD → XS-3',
+          description: 'Converts a 4-bit BCD digit (0–9) into Excess-3 code.',
+        },
+        'decoder-2to4': {
+          name: '2x4 Decoder (AND + NOT)',
+          shortName: '2x4 Decoder',
+          description: 'Gate-level 2-to-4 Decoder built with AND and NOT gates.',
+        },
+        'mux-4to1': {
+          name: '4x1 Multiplexer (MUX)',
+          shortName: '4x1 MUX',
+          description: '4-to-1 MUX with data inputs I0–I3 and selectors S1S0.',
+        },
+        'comparator-2bit': {
+          name: '2-Bit Magnitude Comparator',
+          shortName: '2-Bit Comparator',
+          description: 'Compares 2-bit A and B with A>B, A=B, and A<B outputs.',
+        },
+        'sr-latch': {
+          name: 'SR Latch (Cross-Coupled NOR)',
+          shortName: 'SR Latch',
+          description: 'Basic bistable memory cell built with cross-coupled NOR gates.',
+        },
+        'd-latch': {
+          name: 'D Latch (Enable Controlled)',
+          shortName: 'D Latch',
+          description: 'Level-sensitive NAND D Latch with Enable (EN) control.',
         },
         'tff-counter': {
           name: '2-Bit Counter (T-FF + 7-Seg)',
+          shortName: '2-Bit Counter',
           description: 'Clock-driven T Flip-Flop counter with 7-Segment display.',
         },
         empty: {
           name: 'Blank Canvas',
+          shortName: 'Blank Canvas',
           description: 'Design your own digital logic circuit from scratch.',
         },
       },

@@ -13,6 +13,7 @@ interface MsiPinSpec {
   id: string;
   name: string;
   role?: 'data' | 'control';
+  inverted?: boolean;
 }
 
 function buildMsiMeta(config: {
@@ -50,6 +51,7 @@ function buildMsiMeta(config: {
       relX: width,
       relY: Math.round(rightStartY + idx * step),
       role: p.role ?? 'data',
+      ...(p.inverted ? { inverted: true } : {}),
     })),
   ];
 
@@ -317,6 +319,70 @@ export const COMPONENT_CATALOG: Record<ComponentType, ComponentMeta> = {
       { id: 'out', name: 'Y', direction: 'out', relX: 108, relY: 42 },
     ],
   },
+  AND4: {
+    type: 'AND4',
+    label: '4-Girişli AND',
+    shortLabel: 'AND-4',
+    category: '4-Girişli Kapılar',
+    description: 'Dört girişin tümü 1 olduğunda çıkışı 1 yapar (A · B · C · D).',
+    width: 110,
+    height: 108,
+    pins: [
+      { id: 'a', name: 'A', direction: 'in', relX: 0, relY: 18 },
+      { id: 'b', name: 'B', direction: 'in', relX: 0, relY: 42 },
+      { id: 'c', name: 'C', direction: 'in', relX: 0, relY: 66 },
+      { id: 'd', name: 'D', direction: 'in', relX: 0, relY: 90 },
+      { id: 'out', name: 'Y', direction: 'out', relX: 110, relY: 54 },
+    ],
+  },
+  OR4: {
+    type: 'OR4',
+    label: '4-Girişli OR',
+    shortLabel: 'OR-4',
+    category: '4-Girişli Kapılar',
+    description: 'Dört girişten en az biri 1 olduğunda çıkışı 1 yapar (A + B + C + D).',
+    width: 110,
+    height: 108,
+    pins: [
+      { id: 'a', name: 'A', direction: 'in', relX: 0, relY: 18 },
+      { id: 'b', name: 'B', direction: 'in', relX: 0, relY: 42 },
+      { id: 'c', name: 'C', direction: 'in', relX: 0, relY: 66 },
+      { id: 'd', name: 'D', direction: 'in', relX: 0, relY: 90 },
+      { id: 'out', name: 'Y', direction: 'out', relX: 110, relY: 54 },
+    ],
+  },
+  NAND4: {
+    type: 'NAND4',
+    label: '4-Girişli NAND',
+    shortLabel: 'NAND-4',
+    category: '4-Girişli Kapılar',
+    description: 'Dört girişli evrensel NAND kapısı: (A · B · C · D)\'.',
+    width: 114,
+    height: 108,
+    pins: [
+      { id: 'a', name: 'A', direction: 'in', relX: 0, relY: 18 },
+      { id: 'b', name: 'B', direction: 'in', relX: 0, relY: 42 },
+      { id: 'c', name: 'C', direction: 'in', relX: 0, relY: 66 },
+      { id: 'd', name: 'D', direction: 'in', relX: 0, relY: 90 },
+      { id: 'out', name: 'Y', direction: 'out', relX: 114, relY: 54 },
+    ],
+  },
+  NOR4: {
+    type: 'NOR4',
+    label: '4-Girişli NOR',
+    shortLabel: 'NOR-4',
+    category: '4-Girişli Kapılar',
+    description: 'Dört girişli evrensel NOR kapısı: (A + B + C + D)\'.',
+    width: 114,
+    height: 108,
+    pins: [
+      { id: 'a', name: 'A', direction: 'in', relX: 0, relY: 18 },
+      { id: 'b', name: 'B', direction: 'in', relX: 0, relY: 42 },
+      { id: 'c', name: 'C', direction: 'in', relX: 0, relY: 66 },
+      { id: 'd', name: 'D', direction: 'in', relX: 0, relY: 90 },
+      { id: 'out', name: 'Y', direction: 'out', relX: 114, relY: 54 },
+    ],
+  },
 
   // Multiplexers (MUX)
   MUX_2X1: buildMsiMeta({
@@ -476,6 +542,33 @@ export const COMPONENT_CATALOG: Record<ComponentType, ComponentMeta> = {
       { id: 'd5', name: 'D5' },
       { id: 'd6', name: 'D6' },
       { id: 'd7', name: 'D7' },
+    ],
+  }),
+  IC_74155: buildMsiMeta({
+    type: 'IC_74155',
+    label: '74155 Dual 2-to-4 Decoder',
+    shortLabel: '74155',
+    subcategory: 'Decoders',
+    description:
+      'Çift 2-to-4 Active-Low Decoder/DEMUX (1. Decoder: 1G=0 & 1C=1; 2. Decoder: 2G=0 & 2C=0).',
+    width: 148,
+    leftPins: [
+      { id: 'a', name: 'A', role: 'control' },
+      { id: 'b', name: 'B', role: 'control' },
+      { id: 'c1', name: '1C', role: 'data' },
+      { id: 'g1', name: '1G', role: 'control' },
+      { id: 'c2', name: '2C', role: 'data' },
+      { id: 'g2', name: '2G', role: 'control' },
+    ],
+    rightPins: [
+      { id: 'y1_0', name: '1Y0', inverted: true },
+      { id: 'y1_1', name: '1Y1', inverted: true },
+      { id: 'y1_2', name: '1Y2', inverted: true },
+      { id: 'y1_3', name: '1Y3', inverted: true },
+      { id: 'y2_0', name: '2Y0', inverted: true },
+      { id: 'y2_1', name: '2Y1', inverted: true },
+      { id: 'y2_2', name: '2Y2', inverted: true },
+      { id: 'y2_3', name: '2Y3', inverted: true },
     ],
   }),
 
@@ -659,6 +752,7 @@ export const COMPONENT_CATEGORIES = [
   'Çıkışlar',
   '2-Girişli Kapılar',
   '3-Girişli Kapılar',
+  '4-Girişli Kapılar',
   'MSI Bloklar',
   'Ardışıl Elemanlar',
 ] as const;
@@ -676,7 +770,7 @@ export function createDefaultNode(
   const inputs: Record<string, 0 | 1> = {};
   meta.pins.forEach((pin) => {
     if (pin.direction === 'out') {
-      outputs[pin.id] = pin.id === 'qn' ? 1 : 0;
+      outputs[pin.id] = pin.id === 'qn' || pin.inverted ? 1 : 0;
     } else {
       inputs[pin.id] =
         (type === 'DECODER_2TO4' || type === 'DECODER_3TO8') && pin.id === 'e' ? 1 : 0;

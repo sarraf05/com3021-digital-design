@@ -37,7 +37,11 @@ import {
   evaluateCircuit,
   verifyCircuitAgainstTruthTable,
 } from '../../engine/circuitEngine';
-import { getCircuitPresets } from '../../engine/presets';
+import {
+  PRESET_CATEGORIES,
+  getCircuitPresets,
+  type PresetCategory,
+} from '../../engine/presets';
 import type {
   CircuitChallengeConfig,
   CircuitNode,
@@ -78,6 +82,7 @@ type PhonePaletteTab =
   | 'Temel'
   | '2-Giriş'
   | '3-Giriş'
+  | '4-Giriş'
   | 'MSI'
   | 'Flip-Flop';
 
@@ -86,6 +91,7 @@ const PHONE_PALETTE_TABS: { id: PhonePaletteTab; categories: ComponentCategory[]
   { id: 'Temel', categories: ['Girişler', 'Çıkışlar'] },
   { id: '2-Giriş', categories: ['2-Girişli Kapılar'] },
   { id: '3-Giriş', categories: ['3-Girişli Kapılar'] },
+  { id: '4-Giriş', categories: ['4-Girişli Kapılar'] },
   { id: 'MSI', categories: ['MSI Bloklar'] },
   { id: 'Flip-Flop', categories: ['Ardışıl Elemanlar'] },
 ];
@@ -139,6 +145,42 @@ const CUSTOM_IC_ACCENTS: Record<
   },
 };
 
+const PRESET_CATEGORY_ACCENTS: Record<
+  PresetCategory,
+  { dot: string; idle: string; active: string }
+> = {
+  arithmetic: {
+    dot: 'bg-sky-500',
+    idle: 'bg-white border-slate-200 text-slate-700 hover:border-sky-300',
+    active: 'bg-sky-50 border-sky-400 text-sky-900 shadow-xs',
+  },
+  universal: {
+    dot: 'bg-violet-500',
+    idle: 'bg-white border-slate-200 text-slate-700 hover:border-violet-300',
+    active: 'bg-violet-50 border-violet-400 text-violet-900 shadow-xs',
+  },
+  converters: {
+    dot: 'bg-emerald-500',
+    idle: 'bg-white border-slate-200 text-slate-700 hover:border-emerald-300',
+    active: 'bg-emerald-50 border-emerald-400 text-emerald-900 shadow-xs',
+  },
+  combinational: {
+    dot: 'bg-amber-500',
+    idle: 'bg-white border-slate-200 text-slate-700 hover:border-amber-300',
+    active: 'bg-amber-50 border-amber-400 text-amber-900 shadow-xs',
+  },
+  sequential: {
+    dot: 'bg-rose-500',
+    idle: 'bg-white border-slate-200 text-slate-700 hover:border-rose-300',
+    active: 'bg-rose-50 border-rose-400 text-rose-900 shadow-xs',
+  },
+  canvas: {
+    dot: 'bg-slate-400',
+    idle: 'bg-white border-slate-200 text-slate-700 hover:border-slate-300',
+    active: 'bg-slate-100 border-slate-400 text-slate-900 shadow-xs',
+  },
+};
+
 const CATEGORY_ACCENTS: Record<
   ComponentCategory,
   { badge: string; itemBg: string; itemBorder: string; tag: string }
@@ -166,6 +208,12 @@ const CATEGORY_ACCENTS: Record<
     itemBg: 'bg-orange-50/80 hover:bg-orange-100/90',
     itemBorder: 'border-orange-200 hover:border-orange-400',
     tag: 'text-orange-800 bg-orange-100',
+  },
+  '4-Girişli Kapılar': {
+    badge: 'text-indigo-700',
+    itemBg: 'bg-indigo-50/80 hover:bg-indigo-100/90',
+    itemBorder: 'border-indigo-200 hover:border-indigo-400',
+    tag: 'text-indigo-800 bg-indigo-100',
   },
   'MSI Bloklar': {
     badge: 'text-violet-700',
@@ -219,6 +267,7 @@ const MSI_SUBCATEGORY_ACCENTS: Record<
 
 const TWO_INPUT_GATES: ComponentType[] = ['AND', 'OR', 'NAND', 'NOR', 'XOR', 'XNOR'];
 const THREE_INPUT_GATES: ComponentType[] = ['AND3', 'OR3', 'NAND3', 'NOR3', 'XOR3', 'XNOR3'];
+const FOUR_INPUT_GATES: ComponentType[] = ['AND4', 'OR4', 'NAND4', 'NOR4'];
 
 const MSI_SWAP_FAMILIES: {
   familyKey: keyof typeof UI_STRINGS.tr.simulator.msiSwapFamilies;
@@ -676,21 +725,16 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
       const svg = svgRef.current;
       if (!svg) return { x: pan.x + 120, y: pan.y + 120 };
 
-      const ctm = svg.getScreenCTM();
-      if (ctm) {
-        const pt = svg.createSVGPoint();
-        pt.x = clientX;
-        pt.y = clientY;
-        const mapped = pt.matrixTransform(ctm.inverse());
-        return { x: mapped.x, y: mapped.y };
-      }
-
       const rect = svg.getBoundingClientRect();
-      const vw = rect.width > 0 ? rect.width / zoom : viewW;
-      const vh = rect.height > 0 ? rect.height / zoom : viewH;
+      if (rect.width > 0 && rect.height > 0) {
+        return {
+          x: pan.x + ((clientX - rect.left) / rect.width) * viewW,
+          y: pan.y + ((clientY - rect.top) / rect.height) * viewH,
+        };
+      }
       return {
-        x: pan.x + ((clientX - rect.left) / Math.max(1, rect.width)) * vw,
-        y: pan.y + ((clientY - rect.top) / Math.max(1, rect.height)) * vh,
+        x: pan.x + (clientX - rect.left) / zoom,
+        y: pan.y + (clientY - rect.top) / zoom,
       };
     },
     [pan, zoom, viewW, viewH]
@@ -1129,7 +1173,11 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
     if (panning) {
       const dxClient = e.clientX - panning.startClientX;
       const dyClient = e.clientY - panning.startClientY;
-      if (!panning.hasMoved && Math.hypot(dxClient, dyClient) > 3) {
+      const moveDist = Math.hypot(dxClient, dyClient);
+      if (!panning.hasMoved && moveDist <= 5) {
+        return;
+      }
+      if (!panning.hasMoved) {
         setPanning((prev) => (prev ? { ...prev, hasMoved: true } : null));
       }
       setPan({
@@ -1179,16 +1227,16 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
     cleanupPointerTracking(e.pointerId);
 
     if (panning) {
-      const moved = panning.hasMoved;
+      const moved =
+        panning.hasMoved ||
+        Math.hypot(e.clientX - panning.startClientX, e.clientY - panning.startClientY) > 5;
       setPanning(null);
       if (!moved) {
         setSelectedNodeId(null);
         setSelectedWireId(null);
         setContextMenu(null);
-        if (connectingFrom) {
-          setConnectingFrom(null);
-          setPointerPos(null);
-        }
+        setConnectingFrom(null);
+        setPointerPos(null);
       }
       return;
     }
@@ -1209,6 +1257,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
         handleToggleSwitch(tappedNode.id);
       }
       setDraggingNode(null);
+      return;
     }
     if (connectingFrom) {
       if (snappedTarget) {
@@ -1274,11 +1323,12 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
     e: React.PointerEvent
   ) => {
     e.stopPropagation();
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
     if (activePointersRef.current.size >= 2) return;
     const pinX = node.x + pin.relX;
     const pinY = node.y + pin.relY;
 
-    // Second tap in Tap-to-Connect mode: complete connection or toggle off if same pin
+    // Second tap/click: complete connection or toggle off if same pin
     if (connectingFrom) {
       if (connectingFrom.nodeId === node.id && connectingFrom.pinId === pin.id) {
         setConnectingFrom(null);
@@ -1752,7 +1802,11 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
   const canNodeSwap = useCallback(
     (node: CircuitNode) => {
       if (node.locked) return false;
-      if (TWO_INPUT_GATES.includes(node.type) || THREE_INPUT_GATES.includes(node.type)) {
+      if (
+        TWO_INPUT_GATES.includes(node.type) ||
+        THREE_INPUT_GATES.includes(node.type) ||
+        FOUR_INPUT_GATES.includes(node.type)
+      ) {
         return true;
       }
       if (node.type === 'DFF' || node.type === 'TFF') {
@@ -2099,14 +2153,147 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
           </div>
         </aside>
 
-        {/* Main SVG Circuit Canvas */}
-        <div
-          ref={canvasWrapRef}
-          onDragOver={handleCanvasDragOver}
-          onDrop={handleCanvasDrop}
-          className="relative flex-1 min-h-0 h-full min-w-0 overflow-hidden bg-[#FFFDF9]"
-        >
-          {/* Unified Pure-Math SVG Canvas */}
+        {/* Right Workspace: Mobile Non-Overlapping Controls + Main SVG Circuit Canvas */}
+        <div className="flex-1 min-h-0 h-full min-w-0 flex flex-col overflow-hidden bg-[#FFFDF9]">
+          {/* Phone (< md) Top Action Bar + Swipeable Preset Strip (never overlaps SVG canvas) */}
+          <div className="flex flex-col md:hidden shrink-0 border-b border-slate-200 bg-white/95 z-30">
+            <div className="px-2.5 py-1.5 flex flex-wrap items-center justify-between gap-1">
+              <div className="flex items-center gap-1 flex-wrap">
+                <button
+                  type="button"
+                  onClick={handleGlobalClockPulse}
+                  title={sim.clockPulseTitle}
+                  className="flex items-center gap-1 px-2 py-1 rounded-xl bg-amber-50 hover:bg-amber-100 border-2 border-amber-200 text-amber-800 text-[11px] font-extrabold transition-all whitespace-nowrap cursor-pointer min-h-[32px]"
+                >
+                  <Play className="w-3 h-3 fill-amber-500 text-amber-600" />
+                  <span>{sim.pulseShort}</span>
+                </button>
+
+                {mode === 'lab' && (
+                  <button
+                    type="button"
+                    onClick={handleOpenPackageModal}
+                    title={sim.customIC.packageBtnTitle}
+                    className="flex items-center gap-1 px-2 py-1 rounded-xl bg-violet-50 hover:bg-violet-100 border-2 border-violet-200 text-violet-800 text-[11px] font-extrabold transition-all whitespace-nowrap cursor-pointer min-h-[32px]"
+                  >
+                    <span>{sim.customIC.packageBtnShort}</span>
+                  </button>
+                )}
+
+                {mode === 'challenge' && challenge && (
+                  <button
+                    type="button"
+                    onClick={handleVerifyChallenge}
+                    className="flex items-center gap-1 px-2 py-1 rounded-xl bg-emerald-500 hover:bg-emerald-600 border-2 border-emerald-600 text-white text-[11px] font-extrabold transition-all whitespace-nowrap cursor-pointer min-h-[32px]"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>{sim.verifyShort}</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleResetCanvas}
+                  title={mode === 'challenge' ? sim.resetToStart : sim.clearCanvas}
+                  aria-label={mode === 'challenge' ? sim.resetToStart : sim.clearCanvas}
+                  className="flex items-center gap-1 px-2 py-1 rounded-xl bg-rose-50 hover:bg-rose-100 border-2 border-rose-200 text-rose-700 text-[11px] font-bold transition-all whitespace-nowrap cursor-pointer min-h-[32px]"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+
+                {selectedWireId && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteWire(selectedWireId)}
+                    className="flex items-center gap-1 px-2 py-1 rounded-xl bg-rose-500 hover:bg-rose-600 border-2 border-rose-600 text-white text-[11px] font-bold shadow-xs cursor-pointer min-h-[32px]"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    <span>{sim.deleteWire}</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Mobile Zoom & Center Controls */}
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => zoomAtClientPoint(zoom - 0.15)}
+                  disabled={zoom <= MIN_ZOOM}
+                  title={sim.zoomOut}
+                  aria-label={sim.zoomOut}
+                  className="p-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-sky-50 hover:border-sky-300 disabled:opacity-40 text-slate-700 cursor-pointer min-h-[32px]"
+                >
+                  <ZoomOut className="w-3.5 h-3.5" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => zoomAtClientPoint(1)}
+                  title={sim.resetZoom100}
+                  className="px-1.5 py-1 rounded-xl border border-slate-200 bg-slate-50 hover:bg-sky-50 font-mono text-[10.5px] font-extrabold text-slate-700 min-w-[38px] text-center cursor-pointer min-h-[32px]"
+                >
+                  {Math.round(zoom * 100)}%
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => zoomAtClientPoint(zoom + 0.15)}
+                  disabled={zoom >= MAX_ZOOM}
+                  title={sim.zoomIn}
+                  aria-label={sim.zoomIn}
+                  className="p-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-sky-50 hover:border-sky-300 disabled:opacity-40 text-slate-700 cursor-pointer min-h-[32px]"
+                >
+                  <ZoomIn className="w-3.5 h-3.5" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => centerNodesInViewport(nodes)}
+                  title={sim.centerCircuit}
+                  aria-label={sim.centerCircuit}
+                  className="flex items-center justify-center px-2 py-1 rounded-xl border-2 border-sky-200 bg-sky-50 hover:bg-sky-100 text-sky-800 cursor-pointer min-h-[32px]"
+                >
+                  <Crosshair className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            {mode === 'lab' && (
+              <div
+                aria-label={sim.presetAria}
+                className="flex items-center overflow-x-auto whitespace-nowrap gap-2 px-3 py-2 border-t border-slate-100 bg-[#FFFDF8] no-scrollbar"
+              >
+                {presets.map((p) => {
+                  const active = activePresetId === p.id;
+                  const accent = PRESET_CATEGORY_ACCENTS[p.category];
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => handleLoadPreset(p.id)}
+                      aria-pressed={active}
+                      title={p.description}
+                      className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border-2 text-[11px] font-bold transition-all cursor-pointer min-h-[32px] ${
+                        active ? accent.active : accent.idle
+                      }`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${accent.dot}`} />
+                      <span>{p.shortName}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Main SVG Circuit Canvas */}
+          <div
+            ref={canvasWrapRef}
+            onDragOver={handleCanvasDragOver}
+            onDrop={handleCanvasDrop}
+            className="relative flex-1 min-h-0 min-w-0 overflow-hidden bg-[#FFFDF9]"
+          >
+            {/* Unified Pure-Math SVG Canvas */}
           <svg
             ref={svgRef}
             viewBox={`${pan.x} ${pan.y} ${viewW} ${viewH}`}
@@ -2118,7 +2305,13 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
             onPointerMove={handleSvgPointerMove}
             onPointerUp={handleSvgPointerUp}
             onPointerCancel={handleSvgPointerCancel}
-            style={{ cursor: panning?.hasMoved ? 'grabbing' : 'default' }}
+            style={{
+              cursor: panning?.hasMoved
+                ? 'grabbing'
+                : connectingFrom
+                  ? 'crosshair'
+                  : 'default',
+            }}
             className="w-full h-full block select-none touch-none"
           >
             <defs>
@@ -2142,7 +2335,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
               fill="url(#cream-dot-grid)"
             />
 
-            {/* Unified Layer 1: Exact Pin-to-Pin Bezier Wires */}
+            {/* Unified Layer 1: Exact Pin-to-Pin Smooth Automatic Wires */}
             {wires.map((wire) => {
               const srcNode = nodes.find((n) => n.id === wire.fromNodeId);
               const dstNode = nodes.find((n) => n.id === wire.toNodeId);
@@ -2253,184 +2446,171 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
             ))}
 
             {/* Unified Layer 3: Live Magnetically-Snapped Preview Wire */}
-            {connectingFrom && pointerPos && (
-              <g style={{ pointerEvents: 'none' }}>
-                <path
-                  d={computePreviewBezier(
-                    connectingFrom.startX,
-                    connectingFrom.startY,
-                    snappedTarget ? snappedTarget.x : pointerPos.x,
-                    snappedTarget ? snappedTarget.y : pointerPos.y,
-                    connectingFrom.direction
-                  )}
-                  fill="none"
-                  stroke={snappedTarget ? '#10B981' : '#0EA5E9'}
-                  strokeWidth={3.2}
-                  strokeDasharray={snappedTarget ? undefined : '7 5'}
-                  strokeLinecap="round"
-                />
-                <circle
-                  cx={snappedTarget ? snappedTarget.x : pointerPos.x}
-                  cy={snappedTarget ? snappedTarget.y : pointerPos.y}
-                  r={snappedTarget ? 6 : 4.5}
-                  fill={snappedTarget ? '#10B981' : '#0EA5E9'}
-                  stroke="#FFFFFF"
-                  strokeWidth={2}
-                />
-              </g>
-            )}
+            {connectingFrom && pointerPos && (() => {
+              const targetX = snappedTarget ? snappedTarget.x : pointerPos.x;
+              const targetY = snappedTarget ? snappedTarget.y : pointerPos.y;
+              const previewD = computePreviewBezier(
+                connectingFrom.startX,
+                connectingFrom.startY,
+                targetX,
+                targetY,
+                connectingFrom.direction
+              );
+
+              return (
+                <g style={{ pointerEvents: 'none' }}>
+                  <path
+                    d={previewD}
+                    fill="none"
+                    stroke={snappedTarget ? '#10B981' : '#0EA5E9'}
+                    strokeWidth={3.2}
+                    strokeDasharray={snappedTarget ? undefined : '7 5'}
+                    strokeLinecap="round"
+                  />
+                  <circle
+                    cx={targetX}
+                    cy={targetY}
+                    r={snappedTarget ? 6 : 4.5}
+                    fill={snappedTarget ? '#10B981' : '#0EA5E9'}
+                    stroke="#FFFFFF"
+                    strokeWidth={2}
+                  />
+                </g>
+              );
+            })()}
           </svg>
 
-          {/* Floating Top-Left Pill: Preset Selector + Quick Wire/Desktop Label Editor */}
-          <div className="absolute top-2.5 left-2.5 z-20 flex flex-wrap items-center gap-1.5 max-w-[42%] sm:max-w-[44%]">
-            {mode === 'lab' && (
-              <select
-                value={activePresetId}
-                onChange={(e) => handleLoadPreset(e.target.value)}
-                aria-label={sim.presetAria}
-                className="bg-white/95 backdrop-blur border-2 border-slate-200 border-b-4 text-slate-700 text-[11px] sm:text-xs font-bold rounded-2xl px-2 sm:px-3 py-1.5 shadow-sm focus:outline-none focus:border-sky-400 cursor-pointer max-w-[126px] sm:max-w-none truncate min-h-[34px]"
-              >
-                {presets.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            )}
-
-            {selectedNode && (
-              <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-2xl bg-white/95 backdrop-blur border-2 border-sky-200 border-b-4 text-xs shadow-sm">
-                <span className="text-slate-500 font-semibold">{sim.labelPrefix}</span>
-                <input
-                  type="text"
-                  value={selectedNode.label}
-                  disabled={selectedNode.locked}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setNodes((prev) =>
-                      prev.map((n) => (n.id === selectedNode.id ? { ...n, label: val } : n))
+          {/* Desktop/Tablet (md+) Floating Top Bar (z-30, never collides on mobile) */}
+          <div className="hidden md:flex flex-wrap justify-between items-start gap-2 w-full px-2.5 pt-2.5 absolute top-0 left-0 z-30 pointer-events-none">
+            {/* Top-Left Pill: Categorized Preset Selector + Delete Wire */}
+            <div className="pointer-events-auto flex flex-wrap items-center gap-1.5 w-fit">
+              {mode === 'lab' && (
+                <select
+                  value={activePresetId}
+                  onChange={(e) => handleLoadPreset(e.target.value)}
+                  aria-label={sim.presetAria}
+                  className="bg-white/95 backdrop-blur border-2 border-slate-200 border-b-4 text-slate-700 text-xs font-bold rounded-2xl px-3 py-1.5 shadow-sm focus:outline-none focus:border-sky-400 cursor-pointer max-w-[230px] lg:max-w-[280px] truncate min-h-[34px]"
+                >
+                  {PRESET_CATEGORIES.map((cat) => {
+                    const catPresets = presets.filter((p) => p.category === cat);
+                    if (catPresets.length === 0) return null;
+                    return (
+                      <optgroup key={cat} label={sim.presetCategories[cat]}>
+                        {catPresets.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </optgroup>
                     );
-                  }}
-                  className="w-14 bg-transparent font-mono font-bold text-sky-700 focus:outline-none disabled:text-slate-500"
-                />
-                {!selectedNode.locked && (
+                  })}
+                </select>
+              )}
+
+              {selectedWireId && (
+                <button
+                  type="button"
+                  onClick={() => handleDeleteWire(selectedWireId)}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-2xl bg-rose-500 hover:bg-rose-600 border-2 border-rose-600 border-b-4 active:border-b-2 text-white text-xs font-bold shadow-sm cursor-pointer min-h-[34px]"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>{sim.deleteWire}</span>
+                </button>
+              )}
+            </div>
+
+            {/* Top-Right Compact Stacked Control Panel (w-fit, zero wasted left whitespace) */}
+            <div className="pointer-events-auto w-fit flex flex-col items-end gap-1.5">
+              {/* Row 1: Clock, Package IC, Verify, Clear */}
+              <div className="w-fit bg-white/95 backdrop-blur border-2 border-slate-200 border-b-4 rounded-2xl p-1.5 shadow-sm flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={handleGlobalClockPulse}
+                  title={sim.clockPulseTitle}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-50 hover:bg-amber-100 border-2 border-amber-200 text-amber-800 text-[11px] font-extrabold transition-all whitespace-nowrap cursor-pointer min-h-[32px]"
+                >
+                  <Play className="w-3 h-3 fill-amber-500 text-amber-600" />
+                  <span>{sim.clockPulse}</span>
+                </button>
+
+                {mode === 'lab' && (
                   <button
                     type="button"
-                    onClick={() => handleDeleteNode(selectedNode.id)}
-                    className="text-rose-500 hover:text-rose-700 p-0.5 cursor-pointer"
-                    title={sim.deleteSelectedComp}
+                    onClick={handleOpenPackageModal}
+                    title={sim.customIC.packageBtnTitle}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-violet-50 hover:bg-violet-100 border-2 border-violet-200 text-violet-800 text-[11px] font-extrabold transition-all whitespace-nowrap cursor-pointer min-h-[32px]"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>{sim.customIC.packageBtn}</span>
                   </button>
                 )}
+
+                {mode === 'challenge' && challenge && (
+                  <button
+                    type="button"
+                    onClick={handleVerifyChallenge}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-500 hover:bg-emerald-600 border-2 border-emerald-600 text-white text-[11px] font-extrabold transition-all whitespace-nowrap cursor-pointer min-h-[32px]"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>{sim.verifyCircuit}</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleResetCanvas}
+                  title={mode === 'challenge' ? sim.resetToStart : sim.clearCanvas}
+                  aria-label={mode === 'challenge' ? sim.resetToStart : sim.clearCanvas}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-rose-50 hover:bg-rose-100 border-2 border-rose-200 text-rose-700 text-[11px] font-bold transition-all whitespace-nowrap cursor-pointer min-h-[32px]"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  <span>{sim.clear}</span>
+                </button>
               </div>
-            )}
 
-            {selectedWireId && (
-              <button
-                type="button"
-                onClick={() => handleDeleteWire(selectedWireId)}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-2xl bg-rose-500 hover:bg-rose-600 border-2 border-rose-600 border-b-4 active:border-b-2 text-white text-[11px] sm:text-xs font-bold shadow-sm cursor-pointer min-h-[34px]"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>{sim.deleteWire}</span>
-              </button>
-            )}
-          </div>
+              {/* Row 2: Zoom & Center Controls */}
+              <div className="w-fit bg-white/95 backdrop-blur border-2 border-slate-200 border-b-4 rounded-2xl p-1.5 shadow-sm flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => zoomAtClientPoint(zoom - 0.15)}
+                  disabled={zoom <= MIN_ZOOM}
+                  title={sim.zoomOut}
+                  aria-label={sim.zoomOut}
+                  className="p-1 rounded-xl border border-slate-200 bg-slate-50 hover:bg-sky-50 hover:border-sky-300 disabled:opacity-40 text-slate-700 cursor-pointer min-h-[32px]"
+                >
+                  <ZoomOut className="w-3.5 h-3.5" />
+                </button>
 
-          {/* Floating Top-Right Pastel Pill Toolbar (Clock, Package IC, Verify, Clear, Pan/Zoom) */}
-          <div className="absolute top-2.5 right-2.5 z-20 bg-white/95 backdrop-blur border-2 border-slate-200 border-b-4 rounded-2xl p-1 sm:p-1.5 shadow-sm flex flex-wrap items-center justify-end gap-1 sm:gap-1.5 max-w-[94%]">
-            <button
-              type="button"
-              onClick={handleGlobalClockPulse}
-              title={sim.clockPulseTitle}
-              className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-xl bg-amber-50 hover:bg-amber-100 border-2 border-amber-200 text-amber-800 text-[11px] font-extrabold transition-all whitespace-nowrap cursor-pointer min-h-[32px]"
-            >
-              <Play className="w-3 h-3 fill-amber-500 text-amber-600" />
-              <span className="sm:hidden">{sim.pulseShort}</span>
-              <span className="hidden sm:inline">{sim.clockPulse}</span>
-            </button>
+                <button
+                  type="button"
+                  onClick={() => zoomAtClientPoint(1)}
+                  title={sim.resetZoom100}
+                  className="px-2 py-1 rounded-xl border border-slate-200 bg-slate-50 hover:bg-sky-50 font-mono text-[11px] font-extrabold text-slate-700 min-w-[46px] text-center cursor-pointer min-h-[32px]"
+                >
+                  {Math.round(zoom * 100)}%
+                </button>
 
-            {mode === 'lab' && (
-              <button
-                type="button"
-                onClick={handleOpenPackageModal}
-                title={sim.customIC.packageBtnTitle}
-                className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-xl bg-violet-50 hover:bg-violet-100 border-2 border-violet-200 text-violet-800 text-[11px] font-extrabold transition-all whitespace-nowrap cursor-pointer min-h-[32px]"
-              >
-                <span className="sm:hidden">{sim.customIC.packageBtnShort}</span>
-                <span className="hidden sm:inline">{sim.customIC.packageBtn}</span>
-              </button>
-            )}
+                <button
+                  type="button"
+                  onClick={() => zoomAtClientPoint(zoom + 0.15)}
+                  disabled={zoom >= MAX_ZOOM}
+                  title={sim.zoomIn}
+                  aria-label={sim.zoomIn}
+                  className="p-1 rounded-xl border border-slate-200 bg-slate-50 hover:bg-sky-50 hover:border-sky-300 disabled:opacity-40 text-slate-700 cursor-pointer min-h-[32px]"
+                >
+                  <ZoomIn className="w-3.5 h-3.5" />
+                </button>
 
-            {mode === 'challenge' && challenge && (
-              <button
-                type="button"
-                onClick={handleVerifyChallenge}
-                className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-xl bg-emerald-500 hover:bg-emerald-600 border-2 border-emerald-600 text-white text-[11px] font-extrabold transition-all whitespace-nowrap cursor-pointer min-h-[32px]"
-              >
-                <Check className="w-3.5 h-3.5" />
-                <span className="sm:hidden">{sim.verifyShort}</span>
-                <span className="hidden sm:inline">{sim.verifyCircuit}</span>
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={handleResetCanvas}
-              title={mode === 'challenge' ? sim.resetToStart : sim.clearCanvas}
-              aria-label={mode === 'challenge' ? sim.resetToStart : sim.clearCanvas}
-              className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-xl bg-rose-50 hover:bg-rose-100 border-2 border-rose-200 text-rose-700 text-[11px] font-bold transition-all whitespace-nowrap cursor-pointer min-h-[32px]"
-            >
-              <Trash2 className="w-3.5 h-3.5 sm:w-3 sm:h-3" />
-              <span className="hidden sm:inline">{sim.clear}</span>
-            </button>
-
-            <span className="w-px h-5 bg-slate-200 mx-0.5 hidden sm:block" aria-hidden="true" />
-
-            {/* Zoom & Center Controls */}
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => zoomAtClientPoint(zoom - 0.15)}
-                disabled={zoom <= MIN_ZOOM}
-                title={sim.zoomOut}
-                aria-label={sim.zoomOut}
-                className="p-1.5 sm:p-1 rounded-xl border border-slate-200 bg-slate-50 hover:bg-sky-50 hover:border-sky-300 disabled:opacity-40 text-slate-700 cursor-pointer min-h-[32px]"
-              >
-                <ZoomOut className="w-3.5 h-3.5" />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => zoomAtClientPoint(1)}
-                title={sim.resetZoom100}
-                className="px-1.5 sm:px-2 py-1 rounded-xl border border-slate-200 bg-slate-50 hover:bg-sky-50 font-mono text-[10.5px] sm:text-[11px] font-extrabold text-slate-700 min-w-[38px] sm:min-w-[46px] text-center cursor-pointer min-h-[32px]"
-              >
-                {Math.round(zoom * 100)}%
-              </button>
-
-              <button
-                type="button"
-                onClick={() => zoomAtClientPoint(zoom + 0.15)}
-                disabled={zoom >= MAX_ZOOM}
-                title={sim.zoomIn}
-                aria-label={sim.zoomIn}
-                className="p-1.5 sm:p-1 rounded-xl border border-slate-200 bg-slate-50 hover:bg-sky-50 hover:border-sky-300 disabled:opacity-40 text-slate-700 cursor-pointer min-h-[32px]"
-              >
-                <ZoomIn className="w-3.5 h-3.5" />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => centerNodesInViewport(nodes)}
-                title={sim.centerCircuit}
-                aria-label={sim.centerCircuit}
-                className="flex items-center gap-1 px-2 py-1 rounded-xl border-2 border-sky-200 bg-sky-50 hover:bg-sky-100 text-sky-800 text-[11px] font-bold whitespace-nowrap cursor-pointer min-h-[32px]"
-              >
-                <Crosshair className="w-3.5 h-3.5 sm:w-3 sm:h-3" />
-                <span className="hidden sm:inline">{sim.center}</span>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => centerNodesInViewport(nodes)}
+                  title={sim.centerCircuit}
+                  aria-label={sim.centerCircuit}
+                  className="flex items-center gap-1 px-2 py-1 rounded-xl border-2 border-sky-200 bg-sky-50 hover:bg-sky-100 text-sky-800 text-[11px] font-bold whitespace-nowrap cursor-pointer min-h-[32px]"
+                >
+                  <Crosshair className="w-3 h-3" />
+                  <span>{sim.center}</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -2438,7 +2618,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
           {canvasToast && (
             <div
               onPointerDown={(e) => e.stopPropagation()}
-              className={`absolute top-14 left-1/2 -translate-x-1/2 z-40 max-w-[92%] sm:max-w-md px-3.5 py-2.5 rounded-2xl border-2 border-b-4 shadow-lg flex items-center gap-2.5 text-xs font-bold ${
+              className={`absolute top-2.5 md:top-24 left-1/2 -translate-x-1/2 z-40 max-w-[92%] sm:max-w-md px-3.5 py-2.5 rounded-2xl border-2 border-b-4 shadow-lg flex items-center gap-2.5 text-xs font-bold ${
                 canvasToast.tone === 'warn'
                   ? 'bg-amber-50 border-amber-300 text-amber-900'
                   : canvasToast.tone === 'success'
@@ -2465,17 +2645,36 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
             </div>
           )}
 
-          {/* Floating Selected-Component Touch/Click Action Bar */}
+          {/* Unified Floating Bottom-Center Selected-Component Bar */}
           {selectedNode && !draggingNode && !connectingFrom && (
             <div
               onPointerDown={(e) => e.stopPropagation()}
-              className="absolute top-14 left-1/2 -translate-x-1/2 z-30 max-w-[94%] bg-white/95 backdrop-blur border-2 border-sky-200 border-b-4 rounded-2xl px-2.5 py-1.5 shadow-md flex flex-wrap items-center justify-center gap-1.5"
+              className="absolute bottom-14 left-1/2 -translate-x-1/2 z-30 max-w-[95vw] w-fit bg-white/95 backdrop-blur border-2 border-sky-200 border-b-4 rounded-2xl px-2.5 py-1.5 shadow-md flex flex-wrap items-center justify-center gap-1.5"
             >
-              <span className="px-2 py-0.5 rounded-xl bg-sky-50 border border-sky-200 text-sky-900 font-display font-extrabold text-[11px] truncate max-w-[140px] sm:max-w-[190px]">
-                {selectedNode.type === 'CUSTOM_IC'
-                  ? `🧩 ${selectedNode.label}`
-                  : `${COMPONENT_CATALOG[selectedNode.type].shortLabel} · ${selectedNode.label}`}
-              </span>
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-sky-50 border border-sky-200 text-xs min-h-[34px]">
+                <span className="font-display font-extrabold text-[11px] text-sky-900 shrink-0">
+                  {selectedNode.type === 'CUSTOM_IC'
+                    ? '🧩'
+                    : COMPONENT_CATALOG[selectedNode.type].shortLabel}
+                </span>
+                <span className="text-slate-300" aria-hidden="true">|</span>
+                <span className="text-slate-500 font-semibold text-[11px] shrink-0">
+                  {sim.labelPrefix}
+                </span>
+                <input
+                  type="text"
+                  value={selectedNode.label}
+                  disabled={selectedNode.locked}
+                  aria-label={sim.labelPrefix}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setNodes((prev) =>
+                      prev.map((n) => (n.id === selectedNode.id ? { ...n, label: val } : n))
+                    );
+                  }}
+                  className="w-16 sm:w-20 bg-white/85 px-1.5 py-0.5 rounded-lg border border-sky-200/90 font-mono text-[11px] font-bold text-sky-700 focus:outline-none focus:border-sky-400 disabled:bg-transparent disabled:border-transparent disabled:text-slate-500"
+                />
+              </div>
 
               {selectedNode.type === 'CUSTOM_IC' && mode === 'lab' && (
                 <button
@@ -2502,7 +2701,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                     setContextMenu({
                       nodeId: selectedNode.id,
                       x: Math.max(8, Math.round((rect.width - menuWidth) / 2)),
-                      y: Math.min(Math.max(96, rect.height - 260), 104),
+                      y: Math.max(16, rect.height - 320),
                     });
                   }}
                   className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-violet-50 hover:bg-violet-100 border-2 border-violet-200 text-violet-800 text-[11px] font-extrabold cursor-pointer min-h-[34px] whitespace-nowrap"
@@ -2558,7 +2757,8 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
             const ctxMeta = getNodeMeta(ctxNode, customICs);
             const isGateSwappable =
               TWO_INPUT_GATES.includes(ctxNode.type) ||
-              THREE_INPUT_GATES.includes(ctxNode.type);
+              THREE_INPUT_GATES.includes(ctxNode.type) ||
+              FOUR_INPUT_GATES.includes(ctxNode.type);
             const isFfSwappable = ctxNode.type === 'DFF' || ctxNode.type === 'TFF';
             const isInputSwappable = ctxNode.type === 'SWITCH' || ctxNode.type === 'BUTTON';
             const msiFamily = MSI_SWAP_FAMILIES.find((fam) => fam.types.includes(ctxNode.type));
@@ -2567,6 +2767,9 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
               (t) => !allowedSet || allowedSet.has(t)
             );
             const allowedThree = THREE_INPUT_GATES.filter(
+              (t) => !allowedSet || allowedSet.has(t)
+            );
+            const allowedFour = FOUR_INPUT_GATES.filter(
               (t) => !allowedSet || allowedSet.has(t)
             );
             const allowedFfs = (['DFF', 'TFF'] as ComponentType[]).filter(
@@ -2673,6 +2876,33 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
                                   active
                                     ? 'bg-orange-500 border-orange-600 text-white'
                                     : 'bg-orange-50/70 border-orange-200 text-orange-800 hover:border-orange-400 hover:bg-orange-100'
+                                }`}
+                              >
+                                {COMPONENT_CATALOG[gType].shortLabel}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {allowedFour.length > 0 && (
+                      <div className="space-y-1">
+                        <div className="text-[10px] font-bold text-slate-400 px-1">
+                          {CATEGORY_LABELS['4-Girişli Kapılar'][lang]}
+                        </div>
+                        <div className="grid grid-cols-2 gap-1">
+                          {allowedFour.map((gType) => {
+                            const active = ctxNode.type === gType;
+                            return (
+                              <button
+                                key={gType}
+                                type="button"
+                                onClick={() => handleSwapComponentType(ctxNode.id, gType)}
+                                className={`px-1.5 py-1.5 rounded-xl font-mono text-[10px] font-extrabold border-2 transition-all cursor-pointer ${
+                                  active
+                                    ? 'bg-indigo-500 border-indigo-600 text-white'
+                                    : 'bg-indigo-50/70 border-indigo-200 text-indigo-800 hover:border-indigo-400 hover:bg-indigo-100'
                                 }`}
                               >
                                 {COMPONENT_CATALOG[gType].shortLabel}
@@ -2790,6 +3020,7 @@ export const CircuitSimulator: React.FC<CircuitSimulatorProps> = ({
               </div>
             );
           })()}
+          </div>
         </div>
 
         {/* Phone (< 768px) Collapsed Bottom Sheet Bar */}

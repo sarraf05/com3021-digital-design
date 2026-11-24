@@ -5,6 +5,7 @@ export type ComponentCategory =
   | 'Çıkışlar'
   | '2-Girişli Kapılar'
   | '3-Girişli Kapılar'
+  | '4-Girişli Kapılar'
   | 'MSI Bloklar'
   | 'Ardışıl Elemanlar';
 
@@ -34,6 +35,10 @@ export type ComponentType =
   | 'NOR3'
   | 'XOR3'
   | 'XNOR3'
+  | 'AND4'
+  | 'OR4'
+  | 'NAND4'
+  | 'NOR4'
   | 'HALF_ADDER'
   | 'FULL_ADDER'
   | 'COMPARATOR_2BIT'
@@ -45,6 +50,7 @@ export type ComponentType =
   | 'DEMUX_1TO8'
   | 'DECODER_2TO4'
   | 'DECODER_3TO8'
+  | 'IC_74155'
   | 'ENCODER_4TO2'
   | 'ENCODER_8TO3'
   | 'PRIORITY_ENCODER_4TO2'
@@ -78,6 +84,7 @@ export interface PinDefinition {
   relX: number;
   relY: number;
   role?: 'data' | 'control';
+  inverted?: boolean;
 }
 
 export interface ComponentMeta {

@@ -84,11 +84,15 @@ function getGatePalette(
     case 'NAND':
     case 'AND3':
     case 'NAND3':
+    case 'AND4':
+    case 'NAND4':
       return { fill: '#E0F2FE', stroke: '#0284C7', lip: '#7DD3FC', text: '#0369A1' };
     case 'OR':
     case 'NOR':
     case 'OR3':
     case 'NOR3':
+    case 'OR4':
+    case 'NOR4':
       return { fill: '#FFEDD5', stroke: '#EA580C', lip: '#FDBA74', text: '#C2410C' };
     case 'NOT':
       return { fill: '#F3E8FF', stroke: '#9333EA', lip: '#D8B4FE', text: '#7E22CE' };
@@ -116,6 +120,7 @@ function getGatePalette(
       return { fill: '#E0E7FF', stroke: '#4F46E5', lip: '#A5B4FC', text: '#4338CA' };
     case 'DECODER_2TO4':
     case 'DECODER_3TO8':
+    case 'IC_74155':
       return { fill: '#CCFBF1', stroke: '#0D9488', lip: '#5EEAD4', text: '#0F766E' };
     case 'ENCODER_4TO2':
     case 'ENCODER_8TO3':
@@ -161,7 +166,11 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
     node.type === 'NAND3' ||
     node.type === 'NOR3' ||
     node.type === 'XOR3' ||
-    node.type === 'XNOR3';
+    node.type === 'XNOR3' ||
+    node.type === 'AND4' ||
+    node.type === 'OR4' ||
+    node.type === 'NAND4' ||
+    node.type === 'NOR4';
 
   const segDigit =
     ((node.inputs.b3 ?? 0) << 3) |
@@ -268,6 +277,39 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
         );
       }
 
+      case 'AND4':
+      case 'NAND4': {
+        const path = 'M 12 10 L 50 10 A 36 44 0 0 1 50 98 L 12 98 Z';
+        const bubbleX = 92;
+        const outStartX = node.type === 'NAND4' ? 98 : 86;
+        return (
+          <>
+            <line x1={0} y1={18} x2={12} y2={18} stroke={strokeCol} strokeWidth={2.5} strokeLinecap="round" />
+            <line x1={0} y1={42} x2={12} y2={42} stroke={strokeCol} strokeWidth={2.5} strokeLinecap="round" />
+            <line x1={0} y1={66} x2={12} y2={66} stroke={strokeCol} strokeWidth={2.5} strokeLinecap="round" />
+            <line x1={0} y1={90} x2={12} y2={90} stroke={strokeCol} strokeWidth={2.5} strokeLinecap="round" />
+            <line x1={outStartX} y1={54} x2={meta.width} y2={54} stroke={outVal === 1 ? '#10B981' : strokeCol} strokeWidth={2.5} strokeLinecap="round" />
+            <path d={path} transform="translate(0, 3.5)" fill={pal.lip} />
+            <path d={path} fill={pal.fill} stroke={strokeCol} strokeWidth={sw} strokeLinejoin="round" />
+            {node.type === 'NAND4' && (
+              <circle cx={bubbleX} cy={54} r={5.5} fill="#FFFFFF" stroke={strokeCol} strokeWidth={sw} />
+            )}
+            <text
+              x={47}
+              y={58}
+              textAnchor="middle"
+              fontSize="11"
+              fontWeight="800"
+              fontFamily="Nunito, sans-serif"
+              fill={pal.text}
+              style={{ pointerEvents: 'none' }}
+            >
+              {meta.shortLabel}
+            </text>
+          </>
+        );
+      }
+
       case 'OR3':
       case 'NOR3': {
         const path = 'M 12 10 Q 28 42 12 74 L 40 74 Q 68 74 82 42 Q 68 10 40 10 Z';
@@ -286,6 +328,38 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
             <text
               x={47}
               y={46}
+              textAnchor="middle"
+              fontSize="11"
+              fontWeight="800"
+              fontFamily="Nunito, sans-serif"
+              fill={pal.text}
+              style={{ pointerEvents: 'none' }}
+            >
+              {meta.shortLabel}
+            </text>
+          </>
+        );
+      }
+
+      case 'OR4':
+      case 'NOR4': {
+        const path = 'M 12 10 Q 32 54 12 98 L 42 98 Q 74 98 90 54 Q 74 10 42 10 Z';
+        const outStartX = node.type === 'NOR4' ? 102 : 90;
+        return (
+          <>
+            <line x1={0} y1={18} x2={16} y2={18} stroke={strokeCol} strokeWidth={2.5} strokeLinecap="round" />
+            <line x1={0} y1={42} x2={21} y2={42} stroke={strokeCol} strokeWidth={2.5} strokeLinecap="round" />
+            <line x1={0} y1={66} x2={21} y2={66} stroke={strokeCol} strokeWidth={2.5} strokeLinecap="round" />
+            <line x1={0} y1={90} x2={16} y2={90} stroke={strokeCol} strokeWidth={2.5} strokeLinecap="round" />
+            <line x1={outStartX} y1={54} x2={meta.width} y2={54} stroke={outVal === 1 ? '#10B981' : strokeCol} strokeWidth={2.5} strokeLinecap="round" />
+            <path d={path} transform="translate(0, 3.5)" fill={pal.lip} />
+            <path d={path} fill={pal.fill} stroke={strokeCol} strokeWidth={sw} strokeLinejoin="round" />
+            {node.type === 'NOR4' && (
+              <circle cx={96} cy={54} r={5.5} fill="#FFFFFF" stroke={strokeCol} strokeWidth={sw} />
+            )}
+            <text
+              x={52}
+              y={58}
               textAnchor="middle"
               fontSize="11"
               fontWeight="800"
@@ -926,6 +1000,25 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
 
             {/* Subtle dashed separator between data pins and select/enable control pins on left side */}
             {(() => {
+              if (node.type === 'IC_74155') {
+                const outPins = meta.pins.filter((p) => p.direction === 'out');
+                const sepOutY =
+                  outPins.length >= 5
+                    ? Math.round((outPins[3].relY + outPins[4].relY) / 2)
+                    : 126;
+                return (
+                  <line
+                    x1={meta.width - 54}
+                    y1={sepOutY}
+                    x2={meta.width - 8}
+                    y2={sepOutY}
+                    stroke={pal.stroke}
+                    strokeOpacity={0.35}
+                    strokeWidth={1.2}
+                    strokeDasharray="3 2"
+                  />
+                );
+              }
               const leftInPins = meta.pins.filter((p) => p.direction === 'in');
               const firstCtrlIdx = leftInPins.findIndex((p) => p.role === 'control');
               if (firstCtrlIdx > 0 && meta.category === 'MSI Bloklar' && node.type !== 'CUSTOM_IC') {
@@ -953,7 +1046,7 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
               if (p.direction === 'in') {
                 const isControl = p.role === 'control';
                 const ctrlColor =
-                  p.id === 'e' || p.id === 'cin' || p.id === 'clk'
+                  p.id === 'e' || p.id === 'cin' || p.id === 'clk' || p.id === 'g1' || p.id === 'g2'
                     ? '#B45309'
                     : '#0369A1';
                 return (
@@ -974,7 +1067,7 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
               return (
                 <text
                   key={`lbl_${p.id}`}
-                  x={meta.width - 10}
+                  x={p.inverted ? meta.width - 15 : meta.width - 10}
                   y={p.relY + 3.5}
                   textAnchor="end"
                   fontSize="9.5"
@@ -1016,6 +1109,9 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
             onPointerUp={(e) => {
               e.stopPropagation();
               onPinPointerUp(node, pin, e);
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
             }}
             style={{ cursor: 'crosshair', touchAction: 'none' }}
           >
@@ -1063,6 +1159,19 @@ export const NodeRenderer: React.FC<NodeRendererProps> = ({
 
             {/* Generous invisible hit circle (r=18px) for effortless touch grabbing/tapping */}
             <circle cx={0} cy={0} r={18} fill="transparent" />
+
+            {/* Active-Low inversion bubble for inverted outputs (e.g. 74155 1Y0–2Y3) */}
+            {pin.inverted && (
+              <circle
+                cx={-7.5}
+                cy={0}
+                r={3.5}
+                fill="#FFFFFF"
+                stroke={selected ? '#0EA5E9' : pal.stroke}
+                strokeWidth={1.8}
+                style={{ pointerEvents: 'none' }}
+              />
+            )}
 
             {/* Exact centered crisp visible pin circle */}
             <circle

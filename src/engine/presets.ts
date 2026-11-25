@@ -363,6 +363,36 @@ export function getCircuitPresets(lang: Language = 'tr'): CircuitPreset[] {
     { id: 'cw6', fromNodeId: 'c_tff1', fromPinId: 'q', toNodeId: 'c_seg', toPinId: 'b1' },
   ];
 
+  // 15. Basic Logic Gates Explorer (AND, OR, NOT, NAND, XOR)
+  const bgInA = createDefaultNode('SWITCH', 'bg_in_a', 70, 110, 'A');
+  const bgInB = createDefaultNode('SWITCH', 'bg_in_b', 70, 230, 'B');
+  const bgAndGate = createDefaultNode('AND', 'bg_gate_and', 260, 40, 'AND');
+  const bgOrGate = createDefaultNode('OR', 'bg_gate_or', 260, 118, 'OR');
+  const bgNandGate = createDefaultNode('NAND', 'bg_gate_nand', 260, 196, 'NAND');
+  const bgXorGate = createDefaultNode('XOR', 'bg_gate_xor', 260, 274, 'XOR');
+  const bgNotGate = createDefaultNode('NOT', 'bg_gate_not', 268, 352, "A'");
+  const bgLedAnd = createDefaultNode('LED', 'bg_led_and', 440, 44, 'A·B');
+  const bgLedOr = createDefaultNode('LED', 'bg_led_or', 440, 122, 'A+B');
+  const bgLedNand = createDefaultNode('LED', 'bg_led_nand', 440, 200, "(A·B)'");
+  const bgLedXor = createDefaultNode('LED', 'bg_led_xor', 440, 278, 'A⊕B');
+  const bgLedNot = createDefaultNode('LED', 'bg_led_not', 440, 356, "A'");
+  const basicGatesWires: CircuitWire[] = [
+    { id: 'bgate_w1', fromNodeId: 'bg_in_a', fromPinId: 'out', toNodeId: 'bg_gate_and', toPinId: 'a' },
+    { id: 'bgate_w2', fromNodeId: 'bg_in_b', fromPinId: 'out', toNodeId: 'bg_gate_and', toPinId: 'b' },
+    { id: 'bgate_w3', fromNodeId: 'bg_in_a', fromPinId: 'out', toNodeId: 'bg_gate_or', toPinId: 'a' },
+    { id: 'bgate_w4', fromNodeId: 'bg_in_b', fromPinId: 'out', toNodeId: 'bg_gate_or', toPinId: 'b' },
+    { id: 'bgate_w5', fromNodeId: 'bg_in_a', fromPinId: 'out', toNodeId: 'bg_gate_nand', toPinId: 'a' },
+    { id: 'bgate_w6', fromNodeId: 'bg_in_b', fromPinId: 'out', toNodeId: 'bg_gate_nand', toPinId: 'b' },
+    { id: 'bgate_w7', fromNodeId: 'bg_in_a', fromPinId: 'out', toNodeId: 'bg_gate_xor', toPinId: 'a' },
+    { id: 'bgate_w8', fromNodeId: 'bg_in_b', fromPinId: 'out', toNodeId: 'bg_gate_xor', toPinId: 'b' },
+    { id: 'bgate_w9', fromNodeId: 'bg_in_a', fromPinId: 'out', toNodeId: 'bg_gate_not', toPinId: 'a' },
+    { id: 'bgate_w10', fromNodeId: 'bg_gate_and', fromPinId: 'out', toNodeId: 'bg_led_and', toPinId: 'in' },
+    { id: 'bgate_w11', fromNodeId: 'bg_gate_or', fromPinId: 'out', toNodeId: 'bg_led_or', toPinId: 'in' },
+    { id: 'bgate_w12', fromNodeId: 'bg_gate_nand', fromPinId: 'out', toNodeId: 'bg_led_nand', toPinId: 'in' },
+    { id: 'bgate_w13', fromNodeId: 'bg_gate_xor', fromPinId: 'out', toNodeId: 'bg_led_xor', toPinId: 'in' },
+    { id: 'bgate_w14', fromNodeId: 'bg_gate_not', fromPinId: 'out', toNodeId: 'bg_led_not', toPinId: 'in' },
+  ];
+
   return [
     {
       id: 'half-adder',
@@ -530,6 +560,28 @@ export function getCircuitPresets(lang: Language = 'tr'): CircuitPreset[] {
       description: presetCopy['tff-counter'].description,
       nodes: [clk, swT, tff0, tff1, seg],
       wires: cntWires,
+    },
+    {
+      id: 'basic-gates',
+      category: 'combinational',
+      name: presetCopy['basic-gates'].name,
+      shortName: presetCopy['basic-gates'].shortName,
+      description: presetCopy['basic-gates'].description,
+      nodes: [
+        bgInA,
+        bgInB,
+        bgAndGate,
+        bgOrGate,
+        bgNandGate,
+        bgXorGate,
+        bgNotGate,
+        bgLedAnd,
+        bgLedOr,
+        bgLedNand,
+        bgLedXor,
+        bgLedNot,
+      ],
+      wires: basicGatesWires,
     },
     {
       id: 'empty',

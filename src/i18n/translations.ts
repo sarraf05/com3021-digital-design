@@ -443,6 +443,11 @@ export const UI_STRINGS = {
           shortName: '2-Bit Sayaç',
           description: 'Clock ile tetiklenen T Flip-Flop sayıcı ve 7-Segment.',
         },
+        'basic-gates': {
+          name: 'Temel Mantık Kapıları (AND/OR/NAND/XOR/NOT)',
+          shortName: 'Temel Kapılar',
+          description: 'A ve B anahtarları ile temel mantık kapılarının canlı doğruluk karşılaştırması.',
+        },
         empty: {
           name: 'Boş Çalışma Tuvali',
           shortName: 'Boş Tuval',
@@ -993,6 +998,11 @@ export const UI_STRINGS = {
           name: '2-Bit Counter (T-FF + 7-Seg)',
           shortName: '2-Bit Counter',
           description: 'Clock-driven T Flip-Flop counter with 7-Segment display.',
+        },
+        'basic-gates': {
+          name: 'Basic Logic Gates (AND/OR/NAND/XOR/NOT)',
+          shortName: 'Basic Gates',
+          description: 'Live truth comparison of fundamental logic gates from inputs A and B.',
         },
         empty: {
           name: 'Blank Canvas',

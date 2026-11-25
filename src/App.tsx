@@ -28,9 +28,11 @@ import { useSession, type MainView } from './context/SessionContext';
 import { usePWA } from './hooks/usePWA';
 import { t, UI_STRINGS } from './i18n/translations';
 import { VisualSectionCard } from './components/curriculum/VisualSectionCard';
+import { FocusCardDeck } from './components/curriculum/FocusCardDeck';
 import { QuestionCard } from './components/curriculum/QuestionCard';
 import { ErrorBoundary } from './components/curriculum/ErrorBoundary';
 import { WidgetRenderer } from './components/widgets/WidgetRenderer';
+import { getWeekCurriculum } from './data/curriculum';
 
 const CircuitSimulator = lazy(() => import('./components/simulator/CircuitSimulator'));
 
@@ -149,6 +151,7 @@ export default function App() {
 
   const activeWeek = WEEKS.find((w) => w.id === selectedWeekId) ?? WEEKS[0];
   const activeWeekBookEntry = getTextbookEntryForWeek(activeWeek.weekNumber);
+  const activeFocusCurriculum = getWeekCurriculum(activeWeek.weekNumber);
   const activeTheme = activeWeek.isExam
     ? WEEK_THEMES[4]
     : WEEK_THEMES[(activeWeek.weekNumber - 1) % WEEK_THEMES.length];
@@ -214,10 +217,12 @@ export default function App() {
   ).length;
 
   const sectionCount = activeWeek.visualSections.length;
+  const focusCardCount = activeFocusCurriculum?.cards.length ?? 0;
+  const focusTheoryTotal = activeFocusCurriculum ? focusCardCount : sectionCount;
   const questionCount = activeWeek.questions.length;
   const rawStepIndex = focusStepByWeek[activeWeek.id] ?? 0;
   const safeStepIndex =
-    sectionCount > 0 ? Math.min(Math.max(0, rawStepIndex), sectionCount - 1) : 0;
+    focusTheoryTotal > 0 ? Math.min(Math.max(0, rawStepIndex), focusTheoryTotal - 1) : 0;
   const rawQuestionIndex = focusQuestionByWeek[activeWeek.id] ?? 0;
   const safeQuestionIndex =
     questionCount > 0 ? Math.min(Math.max(0, rawQuestionIndex), questionCount - 1) : 0;
@@ -675,10 +680,20 @@ export default function App() {
           }`}
         >
           {activeView === 'curriculum' && (
-            <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 py-5 md:py-8 space-y-6 md:space-y-8">
+            <div
+              className={`max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 ${
+                lessonViewMode === 'focus' && activeFocusCurriculum
+                  ? 'py-3.5 md:py-5 space-y-4 md:space-y-5'
+                  : 'py-5 md:py-8 space-y-6 md:space-y-8'
+              }`}
+            >
               {/* Week Hero Header */}
               <header
-                className={`rounded-3xl border-2 border-slate-200 border-b-4 bg-gradient-to-br ${activeTheme.heroGradient} p-4 md:p-6 lg:p-7 space-y-4 shadow-sm`}
+                className={`rounded-3xl border-2 border-slate-200 border-b-4 bg-gradient-to-br ${activeTheme.heroGradient} ${
+                  lessonViewMode === 'focus' && activeFocusCurriculum
+                    ? 'p-3.5 md:p-5 space-y-2.5'
+                    : 'p-4 md:p-6 lg:p-7 space-y-4'
+                } shadow-sm`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2.5 text-xs text-slate-500 font-medium">
                   <div className="flex flex-wrap items-center gap-2">
@@ -757,39 +772,45 @@ export default function App() {
                     </p>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => openBookAtPage(activeWeekBookEntry.page)}
-                    className="w-full sm:w-auto self-start min-h-[42px] px-3.5 py-2 rounded-2xl border-2 border-amber-300 border-b-4 bg-amber-50 hover:bg-amber-100 active:border-b-2 active:translate-y-0.5 text-amber-950 text-xs font-display font-extrabold inline-flex items-center justify-center sm:justify-start gap-1.5 shadow-xs transition-all whitespace-nowrap shrink-0 cursor-pointer"
-                  >
-                    <span>{ui.curriculum.openInBook(activeWeekBookEntry.page)}</span>
-                  </button>
+                  {!(lessonViewMode === 'focus' && activeFocusCurriculum) && (
+                    <button
+                      type="button"
+                      onClick={() => openBookAtPage(activeWeekBookEntry.page)}
+                      className="w-full sm:w-auto self-start min-h-[42px] px-3.5 py-2 rounded-2xl border-2 border-amber-300 border-b-4 bg-amber-50 hover:bg-amber-100 active:border-b-2 active:translate-y-0.5 text-amber-950 text-xs font-display font-extrabold inline-flex items-center justify-center sm:justify-start gap-1.5 shadow-xs transition-all whitespace-nowrap shrink-0 cursor-pointer"
+                    >
+                      <span>{ui.curriculum.openInBook(activeWeekBookEntry.page)}</span>
+                    </button>
+                  )}
                 </div>
 
-                <p className="text-sm sm:text-[15px] text-slate-600 leading-relaxed max-w-3xl">
-                  {t(activeWeek.summary, language)}
-                </p>
+                {!(lessonViewMode === 'focus' && activeFocusCurriculum) && (
+                  <>
+                    <p className="text-sm sm:text-[15px] text-slate-600 leading-relaxed max-w-3xl">
+                      {t(activeWeek.summary, language)}
+                    </p>
 
-                {/* Learning Objectives */}
-                <div className="rounded-2xl border-2 border-slate-200/80 bg-white/90 p-4 space-y-2.5">
-                  <div className="text-xs font-display font-extrabold text-slate-800 flex items-center gap-2">
-                    <BookOpen className={`w-4 h-4 ${activeTheme.accentText}`} />
-                    <span>{ui.curriculum.learningObjectives}</span>
-                  </div>
-                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-0.5">
-                    {activeWeek.learningObjectives.map((obj, idx) => (
-                      <li
-                        key={idx}
-                        className="text-xs text-slate-700 font-medium flex items-start gap-2 leading-relaxed"
-                      >
-                        <span className={`font-mono font-extrabold shrink-0 ${activeTheme.accentText}`}>
-                          0{idx + 1}.
-                        </span>
-                        <span>{t(obj, language)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                    {/* Learning Objectives */}
+                    <div className="rounded-2xl border-2 border-slate-200/80 bg-white/90 p-4 space-y-2.5">
+                      <div className="text-xs font-display font-extrabold text-slate-800 flex items-center gap-2">
+                        <BookOpen className={`w-4 h-4 ${activeTheme.accentText}`} />
+                        <span>{ui.curriculum.learningObjectives}</span>
+                      </div>
+                      <ul className="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-0.5">
+                        {activeWeek.learningObjectives.map((obj, idx) => (
+                          <li
+                            key={idx}
+                            className="text-xs text-slate-700 font-medium flex items-start gap-2 leading-relaxed"
+                          >
+                            <span className={`font-mono font-extrabold shrink-0 ${activeTheme.accentText}`}>
+                              0{idx + 1}.
+                            </span>
+                            <span>{t(obj, language)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </>
+                )}
               </header>
 
               {/* Week Content */}
@@ -859,7 +880,11 @@ export default function App() {
                               : 'bg-slate-100 text-slate-600'
                           }`}
                         >
-                          {ui.curriculum.topicsCountLabel(sectionCount)}
+                          {activeFocusCurriculum
+                            ? language === 'en'
+                              ? `${focusCardCount} Cards`
+                              : `${focusCardCount} Kart`
+                            : ui.curriculum.topicsCountLabel(sectionCount)}
                         </span>
                       </button>
 
@@ -901,91 +926,102 @@ export default function App() {
                       )}
                     </div>
 
-                    {/* Focus Theory View: One Section Card at a Time */}
-                    {effectiveFocusSubTab === 'theory' && sectionCount > 0 && (
-                      <div className="space-y-4 md:space-y-5">
-                        {/* Clickable Step Progress Bar */}
-                        <div className="rounded-2xl border-2 border-slate-200/90 bg-white px-3.5 py-3 flex flex-wrap items-center justify-between gap-3">
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            {activeWeek.visualSections.map((sec, idx) => {
-                              const isCurrent = idx === safeStepIndex;
-                              const isVisited = idx < safeStepIndex;
-                              return (
-                                <button
-                                  key={sec.id}
-                                  type="button"
-                                  onClick={() => handleFocusStepChange(idx)}
-                                  title={t(sec.title, language)}
-                                  aria-current={isCurrent ? 'step' : undefined}
-                                  className={`min-w-[38px] min-h-[38px] px-2.5 rounded-xl border-2 font-mono text-xs font-extrabold transition-all cursor-pointer ${
-                                    isCurrent
-                                      ? 'bg-sky-500 border-sky-600 text-white shadow-xs'
-                                      : isVisited
-                                        ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:border-emerald-300'
-                                        : 'bg-[#FFFDF8] border-slate-200 text-slate-600 hover:border-sky-300'
-                                  }`}
-                                >
-                                  {idx + 1}
-                                </button>
-                              );
-                            })}
-                          </div>
-
-                          <span className="font-mono text-xs font-extrabold text-sky-700 bg-sky-50 border border-sky-200 px-3 py-1 rounded-xl">
-                            {ui.curriculum.stepCounter(safeStepIndex + 1, sectionCount)}
-                          </span>
-                        </div>
-
-                        <VisualSectionCard
-                          key={activeWeek.visualSections[safeStepIndex].id}
-                          section={activeWeek.visualSections[safeStepIndex]}
-                          focusMode
+                    {/* Focus Theory View: Bilingual Focus Card Deck (Weeks 1-5+) or Section Fallback */}
+                    {effectiveFocusSubTab === 'theory' &&
+                      (activeFocusCurriculum && focusCardCount > 0 ? (
+                        <FocusCardDeck
+                          weekCurriculum={activeFocusCurriculum}
+                          currentIndex={safeStepIndex}
+                          onChangeIndex={handleFocusStepChange}
+                          hasPracticeTab={questionCount > 0}
+                          onGoToPractice={() => handleFocusSubTabChange('practice')}
                         />
+                      ) : (
+                        sectionCount > 0 && (
+                          <div className="space-y-4 md:space-y-5">
+                            {/* Clickable Step Progress Bar */}
+                            <div className="rounded-2xl border-2 border-slate-200/90 bg-white px-3.5 py-3 flex flex-wrap items-center justify-between gap-3">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                {activeWeek.visualSections.map((sec, idx) => {
+                                  const isCurrent = idx === safeStepIndex;
+                                  const isVisited = idx < safeStepIndex;
+                                  return (
+                                    <button
+                                      key={sec.id}
+                                      type="button"
+                                      onClick={() => handleFocusStepChange(idx)}
+                                      title={t(sec.title, language)}
+                                      aria-current={isCurrent ? 'step' : undefined}
+                                      className={`min-w-[38px] min-h-[38px] px-2.5 rounded-xl border-2 font-mono text-xs font-extrabold transition-all cursor-pointer ${
+                                        isCurrent
+                                          ? 'bg-sky-500 border-sky-600 text-white shadow-xs'
+                                          : isVisited
+                                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:border-emerald-300'
+                                            : 'bg-[#FFFDF8] border-slate-200 text-slate-600 hover:border-sky-300'
+                                      }`}
+                                    >
+                                      {idx + 1}
+                                    </button>
+                                  );
+                                })}
+                              </div>
 
-                        {/* Step Navigation Footer */}
-                        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                          <button
-                            type="button"
-                            disabled={safeStepIndex <= 0}
-                            onClick={() => handleFocusStepChange(safeStepIndex - 1)}
-                            className="min-h-[44px] inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border-2 border-slate-200 border-b-4 bg-white text-xs font-extrabold text-slate-700 hover:border-sky-300 active:border-b-2 active:translate-y-0.5 disabled:opacity-35 disabled:cursor-not-allowed transition-all cursor-pointer"
-                          >
-                            <ChevronLeft className="w-4 h-4" />
-                            <span>{ui.curriculum.prevStep}</span>
-                          </button>
+                              <span className="font-mono text-xs font-extrabold text-sky-700 bg-sky-50 border border-sky-200 px-3 py-1 rounded-xl">
+                                {ui.curriculum.stepCounter(safeStepIndex + 1, sectionCount)}
+                              </span>
+                            </div>
 
-                          {safeStepIndex < sectionCount - 1 ? (
-                            <button
-                              type="button"
-                              onClick={() => handleFocusStepChange(safeStepIndex + 1)}
-                              className="min-h-[44px] inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl border-2 border-sky-600 border-b-4 bg-sky-500 hover:bg-sky-600 text-xs font-extrabold text-white active:border-b-2 active:translate-y-0.5 transition-all cursor-pointer"
-                            >
-                              <span>{ui.curriculum.nextStep}</span>
-                              <ChevronRight className="w-4 h-4" />
-                            </button>
-                          ) : questionCount > 0 ? (
-                            <button
-                              type="button"
-                              onClick={() => handleFocusSubTabChange('practice')}
-                              className="min-h-[44px] inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl border-2 border-emerald-600 border-b-4 bg-emerald-500 hover:bg-emerald-600 text-xs font-extrabold text-white active:border-b-2 active:translate-y-0.5 transition-all shadow-sm cursor-pointer"
-                            >
-                              <Sparkles className="w-4 h-4" />
-                              <span>{ui.curriculum.goToPractice}</span>
-                              <ChevronRight className="w-4 h-4" />
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              disabled
-                              className="min-h-[44px] inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl border-2 border-slate-200 border-b-4 bg-white text-xs font-extrabold text-slate-400 opacity-35 cursor-not-allowed"
-                            >
-                              <span>{ui.curriculum.nextStep}</span>
-                              <ChevronRight className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    )}
+                            <VisualSectionCard
+                              key={activeWeek.visualSections[safeStepIndex].id}
+                              section={activeWeek.visualSections[safeStepIndex]}
+                              focusMode
+                            />
+
+                            {/* Step Navigation Footer */}
+                            <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                              <button
+                                type="button"
+                                disabled={safeStepIndex <= 0}
+                                onClick={() => handleFocusStepChange(safeStepIndex - 1)}
+                                className="min-h-[44px] inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border-2 border-slate-200 border-b-4 bg-white text-xs font-extrabold text-slate-700 hover:border-sky-300 active:border-b-2 active:translate-y-0.5 disabled:opacity-35 disabled:cursor-not-allowed transition-all cursor-pointer"
+                              >
+                                <ChevronLeft className="w-4 h-4" />
+                                <span>{ui.curriculum.prevStep}</span>
+                              </button>
+
+                              {safeStepIndex < sectionCount - 1 ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleFocusStepChange(safeStepIndex + 1)}
+                                  className="min-h-[44px] inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl border-2 border-sky-600 border-b-4 bg-sky-500 hover:bg-sky-600 text-xs font-extrabold text-white active:border-b-2 active:translate-y-0.5 transition-all cursor-pointer"
+                                >
+                                  <span>{ui.curriculum.nextStep}</span>
+                                  <ChevronRight className="w-4 h-4" />
+                                </button>
+                              ) : questionCount > 0 ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleFocusSubTabChange('practice')}
+                                  className="min-h-[44px] inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl border-2 border-emerald-600 border-b-4 bg-emerald-500 hover:bg-emerald-600 text-xs font-extrabold text-white active:border-b-2 active:translate-y-0.5 transition-all shadow-sm cursor-pointer"
+                                >
+                                  <Sparkles className="w-4 h-4" />
+                                  <span>{ui.curriculum.goToPractice}</span>
+                                  <ChevronRight className="w-4 h-4" />
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  disabled
+                                  className="min-h-[44px] inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl border-2 border-slate-200 border-b-4 bg-white text-xs font-extrabold text-slate-400 opacity-35 cursor-not-allowed"
+                                >
+                                  <span>{ui.curriculum.nextStep}</span>
+                                  <ChevronRight className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      ))}
 
                     {/* Focus Practice View: One Question at a Time */}
                     {effectiveFocusSubTab === 'practice' && questionCount > 0 && (

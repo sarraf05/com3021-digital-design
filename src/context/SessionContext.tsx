@@ -14,9 +14,13 @@ import type {
   VerificationResult,
 } from '../types/simulator';
 
+import { cloneNodesDeep } from '../engine/circuitEngine';
+import { getCircuitPresets } from '../engine/presets';
+
 export type MainView = 'curriculum' | 'tools' | 'simulator' | 'book';
 export type LessonViewMode = 'full' | 'focus';
 export type FocusSubTab = 'theory' | 'practice';
+export type FocusLangMode = 'en' | 'tr' | 'bilingual';
 
 export interface QuestionSessionState {
   selectedOption?: number | null;
@@ -94,6 +98,7 @@ export interface SessionState {
   language: Language;
   activeView: MainView;
   lessonViewMode: LessonViewMode;
+  focusLangMode: FocusLangMode;
   focusSubTab: FocusSubTab;
   focusStepByWeek: Record<number, number>;
   focusQuestionByWeek: Record<number, number>;
@@ -125,6 +130,7 @@ function createInitialSessionState(): SessionState {
     language: 'tr',
     activeView: 'curriculum',
     lessonViewMode: 'full',
+    focusLangMode: 'bilingual',
     focusSubTab: 'theory',
     focusStepByWeek: {},
     focusQuestionByWeek: {},
@@ -163,6 +169,13 @@ function readFromSessionStorage(): SessionState {
       parsed.lessonViewMode === 'focus' || parsed.lessonViewMode === 'full'
         ? parsed.lessonViewMode
         : fallback.lessonViewMode;
+
+    const focusLangMode: FocusLangMode =
+      parsed.focusLangMode === 'en' ||
+      parsed.focusLangMode === 'tr' ||
+      parsed.focusLangMode === 'bilingual'
+        ? parsed.focusLangMode
+        : fallback.focusLangMode;
 
     const focusSubTab: FocusSubTab =
       parsed.focusSubTab === 'theory' || parsed.focusSubTab === 'practice'
@@ -232,6 +245,7 @@ function readFromSessionStorage(): SessionState {
       language,
       activeView,
       lessonViewMode,
+      focusLangMode,
       focusSubTab,
       focusStepByWeek,
       focusQuestionByWeek,
@@ -274,6 +288,7 @@ interface SessionContextValue {
   setLanguage: (language: Language) => void;
   setActiveView: (view: MainView) => void;
   setLessonViewMode: (mode: LessonViewMode) => void;
+  setFocusLangMode: (mode: FocusLangMode) => void;
   setFocusSubTab: (tab: FocusSubTab) => void;
   setFocusStepForWeek: (weekId: number, stepIndex: number) => void;
   setFocusQuestionForWeek: (weekId: number, questionIndex: number) => void;
@@ -293,6 +308,7 @@ interface SessionContextValue {
   removeCustomIC: (id: string) => void;
   setBookPage: (page: number) => void;
   openBookAtPage: (page: number) => void;
+  openLabWithPreset: (presetId: string) => void;
   updateToolsState: <K extends keyof ToolsSessionState>(
     key: K,
     value: ToolsSessionState[K]
@@ -391,6 +407,12 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({
   const setLessonViewMode = useCallback((lessonViewMode: LessonViewMode) => {
     setSession((prev) =>
       prev.lessonViewMode === lessonViewMode ? prev : { ...prev, lessonViewMode }
+    );
+  }, []);
+
+  const setFocusLangMode = useCallback((focusLangMode: FocusLangMode) => {
+    setSession((prev) =>
+      prev.focusLangMode === focusLangMode ? prev : { ...prev, focusLangMode }
     );
   }, []);
 
@@ -524,6 +546,34 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({
     }));
   }, []);
 
+  const openLabWithPreset = useCallback((presetId: string) => {
+    const LAB_PRESET_ALIASES: Record<string, string> = {
+      'nand-nor-xor': 'nand-xor',
+      'half-full-adder': 'full-adder',
+      'adder-subtractor': 'full-subtractor',
+      'decoder-mux': 'decoder-2to4',
+      'latches-flipflops': 'd-latch',
+      'seq-analysis': 'tff-counter',
+      'seq-counters': 'tff-counter',
+    };
+    setSession((prev) => {
+      const presets = getCircuitPresets(prev.language);
+      const resolvedId = LAB_PRESET_ALIASES[presetId] ?? presetId;
+      const target = presets.find((p) => p.id === resolvedId) ?? presets[0];
+      return {
+        ...prev,
+        activeView: 'simulator',
+        labCircuit: {
+          activePresetId: target.id,
+          nodes: cloneNodesDeep(target.nodes),
+          wires: target.wires.map((w) => ({ ...w })),
+          zoom: 1,
+          pan: { x: 0, y: 0 },
+        },
+      };
+    });
+  }, []);
+
   const updateToolsState = useCallback(
     <K extends keyof ToolsSessionState>(key: K, value: ToolsSessionState[K]) => {
       setSession((prev) => ({
@@ -557,6 +607,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({
         setLanguage,
         setActiveView,
         setLessonViewMode,
+        setFocusLangMode,
         setFocusSubTab,
         setFocusStepForWeek,
         setFocusQuestionForWeek,
@@ -570,6 +621,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({
         removeCustomIC,
         setBookPage,
         openBookAtPage,
+        openLabWithPreset,
         updateToolsState,
         resetSession,
       }}

@@ -10,11 +10,13 @@ export interface FocusCard {
   content: BilingualText;
   formulaOrCode?: string;
   pdfPage: number;
+  slidePage: number;
 }
 
 export interface WeekCurriculum {
   week: number;
   lectureCode: string;
+  slideFile: string;
   title: BilingualText;
   bookSection: string;
   pdfRange: [number, number];
@@ -26,6 +28,7 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
   {
     week: 1,
     lectureCode: 'Lecture 0',
+    slideFile: 'Lecture0_2p.pdf',
     title: {
       en: 'Introduction & Digital Systems',
       tr: 'Derse Giriş ve Sayısal Sistemler',
@@ -45,6 +48,7 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           tr: '• Sayısal Sistem: Sinyaller sonlu sayıda ayrık değer (0 ve 1) alır; ayrık zamanlı sinyaller yalnızca belirli zaman anlarında (t = 0, 1, 2...) tanımlıdır.\n• Analog Sistem: Sinyaller zamanla sürekli değişir ve sonsuz sayıda değer alır.\n• Senkron ve Asenkron: Senkron sistemlerde işaretler yalnızca saat darbeleriyle değişirken, asenkron sistemlerde her an değişebilir.',
         },
         pdfPage: 18,
+        slidePage: 1,
       },
       {
         id: 'w1-c2',
@@ -58,6 +62,7 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           tr: '• Sayısal Avantajlar: Bileşen sapmalarına ve gürültüye karşı duyarsızdır; basamak sayısı artırılarak doğruluk kolayca yükseltilir.\n• Hız ve Donanım Takası: Paralel toplama tüm basamakları aynı anda işler (yüksek hız, fazla donanım); seri toplama tek toplayıcıyı tekrar kullanır (düşük hız, az donanım).\n• ADC ve DAC: Gerçek dünya sinyalleri ADC ile sayısala çevrilip işlenir ve DAC ile temiz analog sinyale dönüştürülür.',
         },
         pdfPage: 19,
+        slidePage: 2,
       },
       {
         id: 'w1-c3',
@@ -72,6 +77,7 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
         },
         formulaOrCode: 'Combinational: z(t) = F(x(t))   |   Sequential: z(t) = F(x(0, t))',
         pdfPage: 20,
+        slidePage: 2,
       },
       {
         id: 'w1-c4',
@@ -85,18 +91,20 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           tr: '• SSI (<=10 transistör): Temel kapılar (AND, OR, NOT).\n• MSI (10-100): Toplayıcılar, kod çözücüler, MUX ve flip-floplar.\n• LSI (100-1B) ve VLSI (1B-10B): Bellek dizileri, ALU ve işlemciler.\n• SLSI (10B-100B) ve ULSI (>1M): Mikrodenetleyiciler, CPU, GPU ve FPGA yongaları.\n• SOC (System on Chip): Mikroişlemci, bellek ve çevre birimlerini tek silikon yongada birleştirir.',
         },
         pdfPage: 90,
+        slidePage: 2,
       },
     ],
   },
   {
     week: 2,
     lectureCode: 'Lecture 1',
+    slideFile: 'Lecture1_2p.pdf',
     title: {
       en: 'Binary Systems, Base Conversions & Complements',
       tr: 'İkili Sayı Sistemleri, Taban Dönüşümleri ve Tümleyenler',
     },
     bookSection: 'Sec. 1.2 - 1.6',
-    pdfRange: [21, 39],
+    pdfRange: [21, 38],
     cards: [
       {
         id: 'w2-c1',
@@ -111,6 +119,7 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
         },
         formulaOrCode: 'N = a_n·r^n + ... + a_1·r^1 + a_0·r^0 + a_-1·r^-1 + ... + a_-m·r^-m',
         pdfPage: 21,
+        slidePage: 1,
       },
       {
         id: 'w2-c2',
@@ -124,7 +133,8 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           tr: '• Onluk -> Base-r (Tam Kısım): Sayıyı sürekli r tabanına böl; kalanları en alttan (en az anlamlı bit) en üste doğru sırala.\n• Onluk -> Base-r (Kesir Kısmı): Kesri sürekli r ile çarp; oluşan tam kısımları yukarıdan aşağıya doğru yaz.\n• İkili <-> Sekizlik / Onaltılık: İkili noktadan sağa ve sola doğru 3\'erli bit grupları Octal, 4\'erli bit grupları Hex rakamlarına karşılık gelir.',
         },
         formulaOrCode: '(41.6875)_10 = (101001.1011)_2 = (51.54)_8 = (29.B)_16',
-        pdfPage: 24,
+        pdfPage: 23,
+        slidePage: 3,
       },
       {
         id: 'w2-c3',
@@ -138,7 +148,8 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           tr: '• (r-1)\'e Tümleyen: Her rakamı (r-1)\'den çıkar. İkili tabanda (1\'e tümleyen) tüm bitler terslenir (0 <-> 1).\n• r\'ye Tümleyen: (r-1)\'e tümleyene 1 eklenir.\n• 2\'ye Tümleyen Kısa Yolu: Sağdan ilk 1 dahil tüm bitleri aynen bırak, solundaki tüm bitleri tersle.',
         },
         formulaOrCode: '(r-1)\'s Comp: (r^n - 1) - N   |   r\'s Comp: r^n - N = [(r^n - 1) - N] + 1',
-        pdfPage: 27,
+        pdfPage: 28,
+        slidePage: 6,
       },
       {
         id: 'w2-c4',
@@ -151,19 +162,21 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           en: '• M - N via r\'s Complement: Compute M + (r^n - N). If an end carry occurs (M >= N), discard it. If NO end carry occurs (M < N), take the r\'s complement of the sum and place a minus sign.\n• (r-1)\'s Complement Rule: If an end carry occurs, add it back to the LSB (End-Around Carry).\n• Signed Binary: 2\'s complement has a single zero (0000) and represents [-2^(n-1) to +2^(n-1) - 1].',
           tr: '• r\'ye Tümleyen ile M - N: M + (r^n - N) hesaplanır. Son elde (end carry) oluşursa (M >= N) elde atılır. Son elde oluşmazsa (M < N) toplamın tekrar tümleyeni alınır ve başına eksi (-) konur.\n• (r-1)\'e Tümleyen Farkı: Son elde oluşursa sonuca eklenir (End-Around Carry).\n• İşaretli Sayılar: 2\'ye tümleyende tek sıfır (0000) vardır ve 4 bit aralığı -8 ile +7 arasındadır.',
         },
-        pdfPage: 31,
+        pdfPage: 34,
+        slidePage: 8,
       },
     ],
   },
   {
     week: 3,
     lectureCode: 'Lecture 2',
+    slideFile: 'Lecture2_2p.pdf',
     title: {
       en: 'Binary Codes & Boolean Algebra',
       tr: 'İkili Kodlar ve Boole Cebri',
     },
     bookSection: 'Sec. 1.7 - 1.9 & 2.1 - 2.5',
-    pdfRange: [39, 73],
+    pdfRange: [39, 72],
     cards: [
       {
         id: 'w3-c1',
@@ -178,6 +191,7 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
         },
         formulaOrCode: '(185)_10 = (0001 1000 0101)_BCD (12-bit)  vs.  (10111001)_2 (8-bit)',
         pdfPage: 39,
+        slidePage: 1,
       },
       {
         id: 'w3-c2',
@@ -191,6 +205,7 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           tr: '• Üç temel mantık işlemi: AND (x·y), OR (x+y) ve NOT (x\').\n• Fiziksel Gerilim Aralıkları: Lojik-1 ve Lojik-0 belirli gerilim bantlarıyla tanımlanır; aradaki bölge geçiş bölgesidir.\n• Zamanlama Diyagramları: Giriş değişimlerine kapı çıkışlarının zaman ekseninde verdiği tepkiyi gösterir.',
         },
         pdfPage: 51,
+        slidePage: 5,
       },
       {
         id: 'w3-c3',
@@ -204,7 +219,8 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           tr: '• Dağılma Yasaları: x(y + z) = xy + xz ve Boole cebrine özgü x + yz = (x + y)(x + z) eşitliği.\n• İkilik (Duality) İlkesi: İfadedeki operatörler (· <-> +) ve sabitler (0 <-> 1) karşılıklı değiştirilirse ifadenin ikili elde edilir.\n• Yutma (Absorption): x + xy = x ve x(x + y) = x.',
         },
         formulaOrCode: 'DeMorgan: (x + y)\' = x\'y\'   |   (x · y)\' = x\' + y\'',
-        pdfPage: 59,
+        pdfPage: 60,
+        slidePage: 7,
       },
       {
         id: 'w3-c4',
@@ -218,13 +234,15 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           tr: '• İşlem Önceliği: 1. Parantezler -> 2. NOT -> 3. AND -> 4. OR.\n• Donanım Maliyeti: Her terim bir kapıya, her literal bir kapı girişine karşılık gelir; sadeleştirme maliyeti ve gecikmeyi düşürür.\n• F\' Bulma Kısa Yolu: 1) Fonksiyonun ikilini (dual) al (· <-> +), 2) Her literalin tümleyenini al.',
         },
         formulaOrCode: 'F = x\'yz\' + x\'y\'z  ==>  Dual: (x\'+y+z\')(x\'+y\'+z)  ==>  F\' = (x+y\'+z)(x+y+z\')',
-        pdfPage: 68,
+        pdfPage: 67,
+        slidePage: 11,
       },
     ],
   },
   {
     week: 4,
     lectureCode: 'Lecture 3',
+    slideFile: 'Lecture3_2p.pdf',
     title: {
       en: 'Canonical / Standard Forms & Logic Gates',
       tr: 'Kanonik / Standart Formlar ve Lojik Kapılar',
@@ -246,6 +264,7 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
         },
         formulaOrCode: 'm_j\' = M_j   |   Example (n=3, row 5 = 101): m_5 = xy\'z,  M_5 = x\' + y + z\'',
         pdfPage: 73,
+        slidePage: 1,
       },
       {
         id: 'w4-c2',
@@ -260,6 +279,7 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
         },
         formulaOrCode: 'F(A,B,C) = Sigma(1, 4, 5, 6, 7) = Pi(0, 2, 3)',
         pdfPage: 76,
+        slidePage: 3,
       },
       {
         id: 'w4-c3',
@@ -273,6 +293,7 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           tr: '• Standart SOP: AND kapılarından oluşan bir katmanın tek OR kapısına bağlandığı 2 seviyeli devredir.\n• Standart POS: OR kapılarından oluşan bir katmanın tek AND kapısına bağlandığı 2 seviyeli devredir.\n• Standart Olmayan Form: Örneğin AB + C(D + E) 3 seviyeli kapılama gerektirir; AB + CD + CE biçimine açılarak 2 seviyeye indirilir.',
         },
         pdfPage: 79,
+        slidePage: 6,
       },
       {
         id: 'w4-c4',
@@ -286,18 +307,20 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           tr: '• Birleşme Özelliği Tuzağı: NAND ve NOR değişme özelliğine sahiptir ancak BİRLEŞME özelliğine sahip DEĞİLDİR: (x ↑ y) ↑ z != x ↑ (y ↑ z). Çok girişli NAND/NOR doğrudan (xyz)\' ve (x+y+z)\' olarak tanımlanır.\n• Çok Girişli XOR: Tek fonksiyon (Odd Function) olarak çalışır (tek sayıda 1 varsa çıkış 1 olur).\n• Pozitif / Negatif Mantık: H=1, L=0 seçimi Pozitif Mantık; H=0, L=1 seçimi Negatif Mantık verir (fiziksel AND kapısı negatif mantıkta OR kapısı olur).',
         },
         pdfPage: 84,
+        slidePage: 8,
       },
     ],
   },
   {
     week: 5,
     lectureCode: 'Lecture 4',
+    slideFile: 'Lecture4_2p.pdf',
     title: {
       en: 'Gate-Level Minimization: Karnaugh Maps (K-Maps)',
       tr: 'Kapı Seviyesinde Sadeleştirme: Karnaugh Haritaları',
     },
     bookSection: 'Sec. 3.1 - 3.4',
-    pdfRange: [99, 116],
+    pdfRange: [99, 115],
     cards: [
       {
         id: 'w5-c1',
@@ -310,7 +333,8 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           en: '• Visual diagram method for finding minimum two-level SOP or POS expressions without algebraic trial-and-error.\n• Gray Code Ordering: Rows and columns follow 00, 01, 11, 10 so that physically adjacent squares differ in ONLY ONE variable.\n• Wrap-Around Adjacency: Top/bottom edges, left/right edges, and all four corners of a 4-variable map are logically adjacent.',
           tr: '• Cebirsel deneme-yanılma yapmadan en sade iki seviyeli SOP veya POS ifadeyi bulmayı sağlayan görsel yöntemdir.\n• Gray Kodu Sıralaması: Satır ve sütunlar 00, 01, 11, 10 sırasıyla dizilir; böylece komşu iki kare yalnızca 1 değişken bakımından farklıdır.\n• Kenar Komşuluğu: Haritanın üst/alt kenarları, sağ/sol kenarları ve 4 köşesi birbirine komşudur.',
         },
-        pdfPage: 99,
+        pdfPage: 100,
+        slidePage: 1,
       },
       {
         id: 'w5-c2',
@@ -325,6 +349,7 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
         },
         formulaOrCode: 'n variables, group size 2^k  ==>  Term has (n - k) literals',
         pdfPage: 103,
+        slidePage: 3,
       },
       {
         id: 'w5-c3',
@@ -338,6 +363,7 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           tr: '• 4 Değişkenli Harita: 16 kareden oluşur; 1 kare = 4 literal, 2 kare = 3 literal, 4 kare = 2 literal, 8 kare = 1 literal verir.\n• 5 Değişkenli Harita (A, B, C, D, E): Yan yana iki adet 4 değişkenli haritadan (sol taraf A = 0, sağ taraf A = 1) oluşur.\n• İki haritada aynı satır ve sütun koordinatındaki kareler birbirine komşudur ve birleştirildiğinde A değişkeni elenir.',
         },
         pdfPage: 107,
+        slidePage: 6,
       },
       {
         id: 'w5-c4',
@@ -351,13 +377,15 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           tr: '• Adım 1: Haritadaki boş karelere 0 yerleştir.\n• Adım 2: 0\'ları mümkün olan en büyük 2^k dikdörtgenlerle gruplayarak fonksiyonun tümleyeni F\' için en sade SOP ifadesini yaz.\n• Adım 3: F\' ifadesine DeMorgan teoremi uygulayarak (literalleri tersle, · ile + yer değiştir) F\'yi en sade POS formunda elde et.',
         },
         formulaOrCode: 'Group 0s -> F\' (SOP)  ==[ DeMorgan ]==>  F (Simplified POS)',
-        pdfPage: 113,
+        pdfPage: 112,
+        slidePage: 10,
       },
     ],
   },
   {
     week: 6,
     lectureCode: 'Lecture 5',
+    slideFile: 'Lecture5_2p.pdf',
     title: {
       en: 'Don\'t-Care Conditions, NAND/NOR & XOR/Parity',
       tr: 'Farksız Durumlar, NAND/NOR Uygulaması ve XOR/Eşlik',
@@ -378,6 +406,7 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           tr: '• Eksik Tanımlı Fonksiyonlar: Bazı giriş kombinasyonları pratikte hiç oluşmaz (ör. BCD kodunda 1010-1111 arası) veya çıkış değerleri önemsizdir.\n• K-Map Kuralı: Farksız hücreler X ile gösterilir. Yalnızca daha büyük bir 2^k grubu oluşturmaya katkı sağlıyorsa SOP için 1 (veya POS için 0) olarak gruba dahil edilir; sağlamıyorsa dışarıda bırakılır.',
         },
         pdfPage: 116,
+        slidePage: 1,
       },
       {
         id: 'w6-c2',
@@ -392,6 +421,7 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
         },
         formulaOrCode: 'F = AB + CD  ==>  F = ((AB)\' · (CD)\')\'  (3 NAND gates)',
         pdfPage: 119,
+        slidePage: 3,
       },
       {
         id: 'w6-c3',
@@ -406,6 +436,7 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
         },
         formulaOrCode: 'F = (A + B)(C + D)  ==>  F = ((A + B)\' + (C + D)\')\'  (3 NOR gates)',
         pdfPage: 123,
+        slidePage: 6,
       },
       {
         id: 'w6-c4',
@@ -419,19 +450,21 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           tr: '• Özdeşlikler: x ^ 0 = x, x ^ 1 = x\', x ^ x = 0, x ^ x\' = 1. İki girişli XOR, 4 adet NAND kapısı ile inşa edilebilir.\n• Tek ve Çift Fonksiyonlar: Çok girişli XOR, girişlerde TEK sayıda 1 varsa 1 üretir (K-map\'te dama tahtası deseni); XNOR ise ÇİFT sayıda 1 varsa 1 üretir.\n• Eşlik Devreleri: 3 bitlik mesaj için çift eşlik üreteci P = x ^ y ^ z; alıcıdaki hata denetleyici C = x ^ y ^ z ^ P (C = 1 hata olduğunu gösterir).',
         },
         formulaOrCode: 'x ^ y = xy\' + x\'y   |   Parity Gen: P = x ^ y ^ z   |   Checker: C = x ^ y ^ z ^ P',
-        pdfPage: 129,
+        pdfPage: 132,
+        slidePage: 8,
       },
     ],
   },
   {
     week: 7,
     lectureCode: 'Lecture 6',
+    slideFile: 'Lecture6_2p.pdf',
     title: {
       en: 'Combinational Logic: Analysis, Design & Adders',
       tr: 'Birleşik Lojik Devreler: Analiz, Tasarım ve Toplayıcılar',
     },
     bookSection: 'Sec. 4.1 - 4.5',
-    pdfRange: [164, 176],
+    pdfRange: [164, 184],
     labPreset: 'half-full-adder',
     cards: [
       {
@@ -445,7 +478,8 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           en: '• Step 1: Verify the circuit is combinational (no feedback paths or memory elements).\n• Step 2: Label all gate outputs that are functions of input variables (T1, T2, ...), then label subsequent internal nodes.\n• Step 3: Express internal node functions in terms of inputs and substitute step-by-step until final output Boolean expressions (or truth table) are obtained.',
           tr: '• Adım 1: Devrede geri besleme yolu veya bellek elemanı bulunmadığını (birleşik olduğunu) doğrula.\n• Adım 2: Girişlere doğrudan bağlı kapı çıkışlarını (T1, T2, ...), ardından sonraki ara düğümleri etiketle.\n• Adım 3: Ara düğüm denklemlerini yazıp yerine koyma yöntemiyle çıkış Boole fonksiyonlarını veya doğruluk tablosunu çıkar.',
         },
-        pdfPage: 165,
+        pdfPage: 166,
+        slidePage: 1,
       },
       {
         id: 'w7-c2',
@@ -459,7 +493,8 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           tr: '• 4 Adımlı Tasarım: 1) Giriş/çıkış sembollerini belirle -> 2) Doğruluk tablosunu kur -> 3) K-map ile her çıkışı sadeleştir -> 4) Lojik diyagramı çiz ve doğrula.\n• BCD-to-Excess-3 Örneği: Her BCD rakamına 3 (0011) ekler; 10-15 arası girişler X (don\'t-care) alınır. Ortak (C + D) terimi paylaşılarak kapı sayısı azaltılır.',
         },
         formulaOrCode: 'z = D\',  y = CD + (C+D)\',  x = B\'(C+D) + B(C+D)\',  w = A + B(C+D)',
-        pdfPage: 168,
+        pdfPage: 170,
+        slidePage: 4,
       },
       {
         id: 'w7-c3',
@@ -473,7 +508,8 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           tr: '• Yarım Toplayıcı (HA): İki tek biti (x, y) toplar; Toplam (S) ve Elde (C) çıkışlarını üretir.\n• Tam Toplayıcı (FA): İki anlamlı biti (x, y) ve alt basamaktan gelen eldeyi (z) toplar.\n• Tam toplayıcı eldesinin iki seviyeli SOP formu: C = xy + xz + yz (çoğunluk fonksiyonu).',
         },
         formulaOrCode: 'HA: S = x ^ y, C = xy   |   FA: S = x ^ y ^ z, C = xy + z(x ^ y)',
-        pdfPage: 172,
+        pdfPage: 173,
+        slidePage: 7,
       },
       {
         id: 'w7-c4',
@@ -487,12 +523,14 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           tr: '• Modüler Yapı: Birinci Half Adder ara toplamı (x ^ y) ve ara eldeyi (xy) hesaplar.\n• İkinci Half Adder, (x ^ y) ile giriş eldesi z\'yi toplayarak nihai toplamı S = (x ^ y) ^ z ve ikinci eldeyi z(x ^ y) üretir.\n• Bir OR kapısı iki eldeyi birleştirir: C = xy + z(x ^ y).',
         },
         pdfPage: 175,
+        slidePage: 9,
       },
     ],
   },
   {
     week: 8,
     lectureCode: 'Lecture 7',
+    slideFile: 'Lecture7_2p.pdf',
     title: {
       en: 'Arithmetic & Comparison Circuits',
       tr: 'Aritmetik ve Karşılaştırma Devreleri',
@@ -514,6 +552,7 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
         },
         formulaOrCode: 'C_1 = G_0 + P_0·C_0   |   C_2 = G_1 + P_1·G_0 + P_1·P_0·C_0',
         pdfPage: 177,
+        slidePage: 1,
       },
       {
         id: 'w8-c2',
@@ -528,6 +567,7 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
         },
         formulaOrCode: 'Signed Overflow: V = C_(n-1) ^ C_n   (V = 1 means invalid signed result)',
         pdfPage: 181,
+        slidePage: 4,
       },
       {
         id: 'w8-c3',
@@ -541,7 +581,8 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           tr: '• İki BCD rakamı (0-9) ve giriş eldesinin toplamı 0 ile 19 arasında bir ikili sonuç üretir.\n• İkili toplam 9\'u (1001) aştığında veya elde K = 1 oluştuğunda sonuca 6 (0110) eklenerek geçersiz 6 BCD durumu atlanır ve doğru BCD rakamı ile C = 1 eldesi üretilir.',
         },
         formulaOrCode: 'BCD Carry & Add-6 Condition: C = K + Z_8·Z_4 + Z_8·Z_2',
-        pdfPage: 184,
+        pdfPage: 185,
+        slidePage: 6,
       },
       {
         id: 'w8-c4',
@@ -556,12 +597,14 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
         },
         formulaOrCode: '(A=B) = x_3·x_2·x_1·x_0   |   (A>B) = A_3B_3\' + x_3A_2B_2\' + x_3x_2A_1B_1\' + x_3x_2x_1A_0B_0\'',
         pdfPage: 187,
+        slidePage: 8,
       },
     ],
   },
   {
     week: 9,
     lectureCode: 'Lecture 8',
+    slideFile: 'Lecture8_2p.pdf',
     title: {
       en: 'Decoders, Encoders & Multiplexers (MSI Components)',
       tr: 'Kod Çözücüler, Kodlayıcılar ve Çoklayıcılar (MSI Bileşenler)',
@@ -582,6 +625,7 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           tr: '• n-to-2^n Decoder: n-bitlik ikili giriş kodunu 2^n benzersiz minterm çıkışına çözer.\n• Enable ve Genişletme: Enable girişi hem daha büyük kod çözücüler kurmayı (ör. iki 3x8 decoder ile 4x16 yapımı) hem de 1-to-2^n Demultiplexer olarak çalışmayı sağlar.\n• Fonksiyon Gerçekleme: Fonksiyonu 1 yapan minterm çıkışları harici bir OR kapısına (aktif-0 NAND decoder kullanılıyorsa harici NAND kapısına) bağlanır.',
         },
         pdfPage: 192,
+        slidePage: 1,
       },
       {
         id: 'w9-c2',
@@ -595,7 +639,8 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           tr: '• Standart Encoder: Decoder işleminin tersini yapar (2^n giriş -> n-bit ikili kod); aynı anda tek girişin aktif olduğunu varsayar.\n• Öncelikli Kodlayıcı (Priority Encoder): Birden fazla giriş aynı anda 1 olduğunda en yüksek indeksli girişe öncelik verir ve en az bir giriş aktifse Valid biti V = 1 üretir (V = 0 durumu tüm girişlerin 0 olduğunu D_0 = 1 durumundan ayırır).',
         },
         formulaOrCode: '4-Input Priority Encoder: x = D_2 + D_3,  y = D_3 + D_1·D_2\',  V = D_0 + D_1 + D_2 + D_3',
-        pdfPage: 197,
+        pdfPage: 196,
+        slidePage: 5,
       },
       {
         id: 'w9-c3',
@@ -608,7 +653,8 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           en: '• Data Selector: Uses n select lines to route one of 2^n data inputs to a single output.\n• Implementing an n-Variable Function with a 2^(n-1)-to-1 MUX:\n  1) Connect the first (n - 1) variables to the select lines.\n  2) Group truth table rows into pairs for each select combination.\n  3) Inspect F vs. the last variable (e.g., z) in each pair and wire 0, 1, z, or z\' to that MUX data input.',
           tr: '• Veri Seçici: n adet seçme hattı ile 2^n veri girişinden birini tek çıkışa aktarır.\n• n Değişkenli Fonksiyonu 2^(n-1)-to-1 MUX ile Kurma:\n  1) İlk (n - 1) değişkeni seçme girişlerine bağla.\n  2) Doğruluk tablosunu her seçme kombinasyonu için ikili satır gruplarına böl.\n  3) Her çiftte F\'nin son değişkene (ör. z) göre değerini inceleyip ilgili veri girişine 0, 1, z veya z\' bağla.',
         },
-        pdfPage: 200,
+        pdfPage: 199,
+        slidePage: 7,
       },
       {
         id: 'w9-c4',
@@ -622,12 +668,14 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           tr: '• Üç Çıkış Durumu: Lojik-0, Lojik-1 ve Yüksek Empedans (High-Impedance / Hi-Z).\n• Kontrol girişi C = 0 olduğunda çıkış açık devre gibi davranarak kapıyı hattan ayırır.\n• Birden fazla üç durumlu tamponun çakışma olmadan ortak bir veri yolunu (bus) sürmesini veya büyük MUX yapıları kurmasını sağlar.',
         },
         pdfPage: 205,
+        slidePage: 10,
       },
     ],
   },
   {
     week: 10,
     lectureCode: 'Lecture 9',
+    slideFile: 'Lecture9_2p.pdf',
     title: {
       en: 'Synchronous Sequential Logic: Latches & Flip-Flops',
       tr: 'Senkron Ardışıl Lojik Devreler: Mandallar ve Flip-Floplar',
@@ -647,7 +695,8 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           en: '• Storage Elements: Feedback paths store binary state; next state and outputs depend on external inputs plus present state.\n• SR Latch: Cross-coupled NOR gates (active-1, S=R=1 forbidden) or NAND gates (S\'-R\' latch, active-0, S=R=0 forbidden).\n• D Latch (Transparent): Connects R = S\' to eliminate the indeterminate state. While Enable C = 1, output Q continuously follows D (transparent); unsuitable directly in clocked feedback loops.',
           tr: '• Bellek Elemanları: Geri besleme yolları ikili durumu saklar; sonraki durum ve çıkışlar dış girişler ile mevcut duruma bağlıdır.\n• SR Latch: Çapraz bağlı NOR (aktif-1, S=R=1 yasak) veya NAND (S\'-R\' mandalı, aktif-0, S=R=0 yasak) kapılarından oluşur.\n• D Latch (Şeffaf Mandal): R = S\' bağlantısıyla belirsiz durumu önler. Kontrol C = 1 olduğu sürece çıkış Q, D\'yi sürekli izler (transparent); doğrudan saatli geri besleme döngülerinde risklidir.',
         },
-        pdfPage: 262,
+        pdfPage: 263,
+        slidePage: 1,
       },
       {
         id: 'w10-c2',
@@ -660,7 +709,8 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           en: '• Edge Triggering: Samples input and updates Q ONLY at the positive edge (0 -> 1) or negative edge (1 -> 0) of the clock (built via Master-Slave D latches or 3 SR latches).\n• Setup Time (t_su): Minimum time data D must remain stable BEFORE the active clock edge.\n• Hold Time (t_h): Minimum time data D must remain stable AFTER the active clock edge.\n• Propagation Delay (t_p): Time from active clock edge until Q stabilizes.',
           tr: '• Kenar Tetikleme: Girişi örnekler ve Q çıkışını YALNIZCA saat sinyalinin yükselen (0 -> 1) veya düşen (1 -> 0) kenarında günceller (Master-Slave D latch veya üç SR latch ile kurulur).\n• Setup Time (t_su): Aktif saat kenarından ÖNCE D girişinin sabit kalması gereken minimum süre.\n• Hold Time (t_h): Aktif saat kenarından SONRA D girişinin değişmemesi gereken minimum süre.\n• Propagation Delay (t_p): Tetikleme kenarından çıkışın kararlı hale gelmesine kadar geçen süre.',
         },
-        pdfPage: 268,
+        pdfPage: 270,
+        slidePage: 5,
       },
       {
         id: 'w10-c3',
@@ -675,6 +725,7 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
         },
         formulaOrCode: 'D: Q(t+1) = D   |   JK: Q(t+1) = J·Q\' + K\'·Q   |   T: Q(t+1) = T ^ Q = T·Q\' + T\'·Q',
         pdfPage: 272,
+        slidePage: 7,
       },
       {
         id: 'w10-c4',
@@ -688,18 +739,20 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           tr: '• İlk Açılış Başlatma: Devreye ilk enerji verildiğinde flip-flopların başlangıç durumu belirsizdir.\n• Direct Set (Preset): Saat darbesinden bağımsız olarak çıkışı anında Q = 1 yapar.\n• Direct Reset (Clear): Saat darbesinden bağımsız olarak çıkışı anında Q = 0 yapar (genellikle aktif-0 olarak baloncukla gösterilir).',
         },
         pdfPage: 276,
+        slidePage: 10,
       },
     ],
   },
   {
     week: 11,
     lectureCode: 'Lecture 10',
+    slideFile: 'Lecture10_2p.pdf',
     title: {
       en: 'Analysis of Clocked Sequential Circuits (FSMs)',
       tr: 'Saatli Ardışıl Devrelerin Analizi (Sonlu Durum Makineleri)',
     },
     bookSection: 'Sec. 5.4 - 5.5',
-    pdfRange: [279, 291],
+    pdfRange: [278, 291],
     labPreset: 'seq-analysis',
     cards: [
       {
@@ -714,7 +767,8 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           tr: '• Saatli Ardışıl Devre Davranışı: Hem çıkışlar hem de bir sonraki durum, mevcut durum ile dış girişlerin fonksiyonudur.\n• Durum (Geçiş) Denklemi: Bir saat darbesi sonraki durumu Q(t+1), mevcut durum ve girişler cinsinden ifade eder (kısalık için (t) indisi genellikle yazılmaz).\n• Durum Tablosu: m flip-flop ve n giriş için 2^(m+n) satırı sıralar veya 3 sütunlu kompakt biçimde (Mevcut Durum, x=0/x=1 için Sonraki Durum ve Çıkış) düzenlenir.',
         },
         formulaOrCode: 'Example (D-FF): A(t+1) = Ax + Bx,  B(t+1) = A\'x,  y = (A + B)x\'',
-        pdfPage: 279,
+        pdfPage: 278,
+        slidePage: 2,
       },
       {
         id: 'w11-c2',
@@ -729,6 +783,7 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
         },
         formulaOrCode: 'D Flip-Flop Rule: Q(t+1) = D_Q  (State equation equals input equation)',
         pdfPage: 282,
+        slidePage: 4,
       },
       {
         id: 'w11-c3',
@@ -743,6 +798,7 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
         },
         formulaOrCode: 'T-FF Counter Example: T_A = Bx,  T_B = x,  y = AB  (Counts 00->01->10->11 when x=1)',
         pdfPage: 285,
+        slidePage: 7,
       },
       {
         id: 'w11-c4',
@@ -757,18 +813,20 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
         },
         formulaOrCode: 'Mealy: Output = f(State, Input)   |   Moore: Output = f(State)',
         pdfPage: 289,
+        slidePage: 12,
       },
     ],
   },
   {
     week: 12,
     lectureCode: 'Lecture 11',
+    slideFile: 'Lecture11_2p.pdf',
     title: {
       en: 'Design & Synthesis of Synchronous Sequential Circuits',
       tr: 'Senkron Ardışıl Devrelerin Tasarımı ve Sentezi',
     },
-    bookSection: 'Sec. 5.7',
-    pdfRange: [302, 312],
+    bookSection: 'Sec. 5.7 - 5.8',
+    pdfRange: [317, 342],
     labPreset: 'seq-counters',
     cards: [
       {
@@ -783,7 +841,8 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           tr: '• Tasarım Adımları:\n  1) Problem tanımından durum diyagramını çıkar.\n  2) Gerekirse durum sayısını azalt.\n  3) Durumlara ikili kodlar ata (en fazla 2^m durum için m flip-flop gerekir).\n  4) İkili kodlanmış durum tablosunu oluştur.\n  5) Kullanılacak flip-flop türünü seç (D, JK veya T).\n  6) K-map ile flip-flop giriş ve çıkış denklemlerini sadeleştir.\n  7) Lojik diyagramı çiz (4-7. adımlar algoritmik sentez aşamasıdır).',
         },
         formulaOrCode: 'Number of Flip-Flops (m):  2^(m-1) < Number of States <= 2^m',
-        pdfPage: 302,
+        pdfPage: 322,
+        slidePage: 2,
       },
       {
         id: 'w12-c2',
@@ -797,7 +856,8 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           tr: '• Problem: Giriş hattı x üzerinde ardışık 3 veya daha fazla 1 geldiğini algıla (Moore modeli).\n• Durumlar: S_0=00 (hiç 1 yok), S_1=01 (bir adet 1), S_2=10 (iki adet 1), S_3=11 (>=3 adet 1, çıkış y=1). Herhangi bir x=0 girişi devreyi S_0\'a döndürür.\n• Doğrudan D-FF Kolaylığı: D_A = A(t+1) ve D_B = B(t+1) olduğundan, Sonraki Durum sütunları uyarma tablosuna gerek kalmadan doğrudan K-map mintermlerini verir.',
         },
         formulaOrCode: 'D_A = Ax + Bx,   D_B = Ax + B\'x,   y = AB',
-        pdfPage: 304,
+        pdfPage: 324,
+        slidePage: 3,
       },
       {
         id: 'w12-c3',
@@ -811,7 +871,8 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           tr: '• Kullanım Amacı: Sentez sırasında durum tablosundaki Q(t) -> Q(t+1) geçişi bellidir; bu geçişi sağlayacak flip-flop girişleri (X farksız durumlarıyla birlikte) bulunur.\n• JK Uyarma Kuralları:\n  - 0 -> 0: J=0, K=X   |   0 -> 1: J=1, K=X\n  - 1 -> 0: J=X, K=1   |   1 -> 1: J=X, K=0\n• T Uyarma Kuralları:\n  - Durum değişmiyorsa (0->0 veya 1->1): T = 0\n  - Durum değişiyorsa (0->1 veya 1->0): T = 1',
         },
         formulaOrCode: 'T Excitation Shortcut: T = Q(t) ^ Q(t+1)',
-        pdfPage: 306,
+        pdfPage: 326,
+        slidePage: 5,
       },
       {
         id: 'w12-c4',
@@ -825,7 +886,156 @@ export const CURRICULUM_DATA: WeekCurriculum[] = [
           tr: '• JK Sentezi: Her durum geçişi için uyarma tablosunu kullanarak J ve K sütunlarını doldur; K-map\'teki X (don\'t-care) hücrelerini kullanarak kapı sayısını en aza indir.\n• T Flip-Flop ile İkili Sayıcılar: T flip-flop\'un tümleme özelliği sayesinde sayıcılar en az kapıyla inşa edilir.\n• Sayıcı Durum Diyagramı Kuralı: Geçişler her saat kenarında otomatik gerçekleştiği için saat sinyali geçiş oklarında giriş değişkeni olarak gösterilmez.',
         },
         formulaOrCode: '3-Bit Binary Counter (A_2 A_1 A_0): T_A0 = 1,  T_A1 = A_0,  T_A2 = A_1·A_0',
-        pdfPage: 310,
+        pdfPage: 330,
+        slidePage: 7,
+      },
+    ],
+  },
+  {
+    week: 13,
+    lectureCode: 'Lecture 11',
+    slideFile: 'Lecture11_2p.pdf',
+    title: {
+      en: 'State Reduction, State Assignment & Sequence Detectors',
+      tr: 'Durum İndirgeme, Durum Ataması ve Dizi Algılayıcı Tasarımı',
+    },
+    bookSection: 'Sec. 5.5 & 5.7 - 5.8',
+    pdfRange: [278, 330],
+    labPreset: 'seq-analysis',
+    cards: [
+      {
+        id: 'w13-c1',
+        type: 'concept',
+        title: {
+          en: 'State Reduction & Equivalence Conditions',
+          tr: 'Durum İndirgeme (State Reduction) ve Eşdeğerlik Koşulları',
+        },
+        content: {
+          en: '• Purpose: Reduce identical states without changing the external input-output behavior of the sequential circuit.\n• Equivalence Rule (Mano Sec. 5.7): Two states are equivalent if, for every possible input combination, they produce IDENTICAL outputs AND transition to the SAME (or an equivalent) next state.\n• Benefit: Fewer states simplify combinational gates and can even eliminate flip-flops when M crosses a power-of-2 boundary.',
+          tr: '• Amaç: Devrenin dış giriş-çıkış davranışını değiştirmeden gereksiz durumları birleştirerek devre maliyetini azaltmaktır.\n• Eşdeğerlik Koşulu (Mano Sec. 5.7): İki durum, tüm olası giriş kombinasyonları için AYNI çıkışı üretiyor VE AYNI (veya birbirine eşdeğer) sonraki duruma gidiyorsa eşdeğerdir.\n• Fayda: Durum sayısını düşürmek K-Map maliyetini azaltır ve 2^m sınırı aşılıyorsa flip-flop sayısı da azalır.',
+        },
+        formulaOrCode: 'S_i ≡ S_j  iff  ∀x: Output(S_i,x) = Output(S_j,x)  AND  Next(S_i,x) ≡ Next(S_j,x)',
+        pdfPage: 317,
+        slidePage: 2,
+      },
+      {
+        id: 'w13-c2',
+        type: 'exam-tip',
+        title: {
+          en: 'Binary State Assignment & Lock-Out / Self-Correction',
+          tr: 'İkili Durum Ataması ve Kilitlenme (Lock-Out) Kontrolü',
+        },
+        content: {
+          en: '• State Assignment: Assigning different binary codes (e.g., Binary vs. Gray vs. One-Hot) to the same M states yields drastically different gate counts in K-maps.\n• Unused State Codes: When M < 2^m, unused codes can start as don\'t-cares (X) during minimization.\n• Lock-Out Hazard: After fixing K-map loops, ALWAYS check where each unused code transitions! If unused states cycle only among themselves without entering a valid state, the circuit can lock up at power-on.',
+          tr: '• Durum Ataması: Aynı M durum için farklı ikili kodlamalar (Binary, Gray, One-Hot) K-Map kapı sayısını önemli ölçüde değiştirir.\n• Kullanılmayan Kodlar: M < 2^m olduğunda boşta kalan durum kodları K-Map\'te X alınabilir.\n• Kilitlenme (Lock-Out) Kontrolü: K-Map sadeleştirmesinden sonra boş kodların hangi duruma gittiği MUTLAKA analiz edilmelidir; kendi aralarında kısır döngüye giriyorsa devre kilitlenebilir.',
+        },
+        formulaOrCode: 'Unused States = 2^m − M  (Verify every unused state returns to valid cycle!)',
+        pdfPage: 320,
+        slidePage: 2,
+      },
+      {
+        id: 'w13-c3',
+        type: 'method',
+        title: {
+          en: 'Overlapping vs. Non-Overlapping Sequence Detectors',
+          tr: 'Overlapping ve Non-Overlapping Dizi Algılayıcı Tasarımı',
+        },
+        content: {
+          en: '• Overlapping Detection: The last bit(s) of a matched pattern can serve as the prefix of the next pattern (e.g., 10101 yields two detections for "101").\n• Non-Overlapping Detection: Immediately after a match, the FSM resets fully to S_0 so matched bits cannot be reused.\n• Mealy vs. Moore Trade-off: A Mealy 101 detector needs 3 states (S_0, S_1, S_2) and asserts y=1 on the final transition arrow, whereas a Moore 101 detector needs 4 states (adds S_3/1).',
+          tr: '• Overlapping (Örtüşen) Algılama: Tamamlanan dizinin son bitleri bir sonraki dizinin başlangıcı olarak yeniden kullanılabilir (ör. 10101 içinde "101" iki kez algılanır).\n• Non-Overlapping (Örtüşmeyen): Eşleşme sağlandığı anda FSM tamamen S_0 başlangıç durumuna döner.\n• Mealy vs. Moore: Mealy 101 algılayıcı 3 durumla (çıkış ok üzerinde) çalışırken, Moore modeli 4 durum (S_3/1) gerektirir.',
+        },
+        formulaOrCode: 'Mealy 101 Overlapping: S2 —(1/1)→ S1   |   Non-Overlapping: S2 —(1/1)→ S0',
+        pdfPage: 322,
+        slidePage: 3,
+      },
+      {
+        id: 'w13-c4',
+        type: 'method',
+        title: {
+          en: 'Comparative Synthesis: D, JK & T Flip-Flops',
+          tr: 'D, JK ve T Flip-Flop İle Karşılaştırmalı Devre Sentezi',
+        },
+        content: {
+          en: '• D Flip-Flop: Next-state columns directly equal D_A, D_B; fast to synthesize but lacks excitation don\'t-cares.\n• JK Flip-Flop: Excitation table supplies 50% don\'t-care (X) entries per transition, often cutting combinational gate count to zero on counters/Gray FSMs.\n• T Flip-Flop: T_i = Q_i ⊕ Q_i+; optimal for binary up/down counters where bits toggle conditionally.',
+          tr: '• D Flip-Flop: Sonraki durum doğrudan D girişine eşit olduğu için kurulumu en hızlıdır, ancak uyarım tablosundan gelen ekstra X bulunmaz.\n• JK Flip-Flop: Her geçişte %50 X (don\'t-care) ürettiği için birleşik kapı sayısını sıkça en aza indirir (Q\' çıkışı da kılıfta hazırdır).\n• T Flip-Flop: T_i = Q_i ⊕ Q_i+ kuralıyla standart ikili sayıcılarda en ekonomik çözümü sunar.',
+        },
+        formulaOrCode: '2-Bit Gray Counter: D & JK = 0 external gates  |  T = 2 XOR/XNOR gates',
+        pdfPage: 326,
+        slidePage: 6,
+      },
+    ],
+  },
+  {
+    week: 14,
+    lectureCode: 'Lecture 11',
+    slideFile: 'Lecture11_2p.pdf',
+    title: {
+      en: 'Registers, Shift Registers & Counters',
+      tr: 'Yazmaçlar, Kaydırmalı Yazmaçlar ve Sayıcılar',
+    },
+    bookSection: 'Sec. 6.1 - 6.5',
+    pdfRange: [343, 372],
+    labPreset: 'seq-counters',
+    cards: [
+      {
+        id: 'w14-c1',
+        type: 'concept',
+        title: {
+          en: 'Registers, Parallel Load & 4-Bit Universal Shift Register',
+          tr: 'Yazmaçlar, Paralel Yükleme ve 4-Bit Evrensel Kaydırmalı Yazmaç',
+        },
+        content: {
+          en: '• Clean Clock Rule: Parallel-load registers NEVER gate the Clock with Load; instead a 2-to-1 MUX feeds D (Load=0 holds Q, Load=1 loads I).\n• Shift Modes: SISO, SIPO, PISO, and PIPO transfer data serially or in parallel.\n• 4-Bit Universal Shift Register (Mano Fig. 6.7): Uses a 4-to-1 MUX per stage with (S_1, S_0): 00 = Hold, 01 = Shift Right, 10 = Shift Left, 11 = Parallel Load.',
+          tr: '• Temiz Saat Kuralı: Paralel yüklemeli yazmaçlarda saat hattına kapı konmaz (clock gating yapılmaz); bunun yerine D girişi önüne 2×1 MUX yerleştirilir.\n• Kaydırmalı Yazmaç Türleri: SISO, SIPO, PISO ve PIPO seri/paralel veri aktarımı sağlar.\n• 4-Bit Universal Shift Register: Her aşamada 4×1 MUX ve (S_1, S_0) uçlarıyla 00=Tut, 01=Sağa Kaydır, 10=Sola Kaydır, 11=Paralel Yükle işlevlerini sunar.',
+        },
+        formulaOrCode: 'S_1 S_0: 00 = Hold  |  01 = Shift Right  |  10 = Shift Left  |  11 = Parallel Load',
+        pdfPage: 343,
+        slidePage: 7,
+      },
+      {
+        id: 'w14-c2',
+        type: 'formula',
+        title: {
+          en: 'Asynchronous Ripple Counters & Cumulative Delay',
+          tr: 'Asenkron Dalgalı (Ripple) Sayıcılar ve Yayılım Gecikmesi',
+        },
+        content: {
+          en: '• Ripple Clocking: Only LSB receives the external clock; each stage\'s Q (or Q\') drives the next stage\'s CLK input with T=1.\n• Polarity Rule: Negative-edge FFs clocked by Q count UP (clocked by Q\' count DOWN).\n• Speed & Glitch Limitation: Transitions ripple sequentially, producing worst-case settling delay N·t_pd (f_max = 1/(N·t_pd)) and transient decoding glitches.',
+          tr: '• Dalgalı Tetikleme: Dış saat sadece en düşük basamağa (A_0) girer; her basamağın Q (veya Q\') çıkışı bir sonraki katın saatini sürer.\n• Kenar Kuralı: Düşen kenarlı FF\'lerde Q bağlantısı YUKARI, Q\' bağlantısı AŞAĞI sayar.\n• Hız ve Glitch Sınırı: Değişimler dalga gibi yayıldığı için toplam gecikme N·t_pd (f_max = 1/(N·t_pd)) olur ve ara geçişlerde sahte durumlar oluşur.',
+        },
+        formulaOrCode: 'T_min >= N · t_pd   =>   f_max = 1 / (N · t_pd)   (0111 -> 0110 -> 0100 -> 0000 -> 1000)',
+        pdfPage: 355,
+        slidePage: 7,
+      },
+      {
+        id: 'w14-c3',
+        type: 'method',
+        title: {
+          en: 'Synchronous Binary & BCD Decade Counters',
+          tr: 'Senkron İkili ve BCD Onluk (Decade) Sayıcılar',
+        },
+        content: {
+          en: '• Parallel Clocking: All flip-flops share the exact same CLK edge, eliminating ripple delay and decoder glitches.\n• Binary Enable Chain: With Count Enable E, bit i toggles when E and all lower bits are 1: T_i = E · Q_0 · Q_1 · ... · Q_(i-1).\n• Synchronous BCD Decade Counter (0–9): Wraps cleanly from 1001 to 0000 using synchronous T equations and outputs Carry y = Q_8 · Q_1.',
+          tr: '• Paralel Saat: Tüm flip-floplar aynı ortak saate bağlıdır; böylece dalga gecikmesi ve ara durum sıçramaları ortadan kalkar.\n• Senkron Enable Zinciri: Sayma izni E ile i. bit, kendisinden önceki tüm bitler 1 olduğunda terslenir: T_i = E · Q_0···Q_(i-1).\n• Senkron BCD Sayıcı (0–9): 1001 (9) durumundan doğrudan 0000\'a döner ve üst basamak için elde y = Q_8 · Q_1 üretir.',
+        },
+        formulaOrCode: 'BCD T-FF: T_Q1=1,  T_Q2=Q_8\'Q_1,  T_Q4=Q_2Q_1,  T_Q8=Q_4Q_2Q_1 + Q_8Q_1,  y=Q_8Q_1',
+        pdfPage: 360,
+        slidePage: 8,
+      },
+      {
+        id: 'w14-c4',
+        type: 'concept',
+        title: {
+          en: 'Ring Counter vs. Johnson (Switch-Tail) Counter',
+          tr: 'Ring (Halka) Sayıcı ve Johnson (Switch-Tail) Sayıcı',
+        },
+        content: {
+          en: '• Ring Counter: Circular shift register feeding Q_last directly to D_first; yields k one-hot states for k flip-flops (must initialize to 1000).\n• Johnson (Switch-Tail) Counter: Feeds inverted Q_last\' back to D_first; yields 2k states from 0000 (e.g., 4 FFs -> 8 timing states).\n• Simple Decoding: Every Johnson state is decoded cleanly with a single 2-input AND gate, zero glitches.',
+          tr: '• Ring (Halka) Sayıcı: Son çıkış Q_last doğrudan ilk girişe bağlanır; k flip-flop ile k adet one-hot durum üretir (başlangıçta 1000 yüklenmelidir).\n• Johnson Sayıcı: Son çıkışın tümleyeni Q_last\' ilk girişe geri beslenir; k flip-flop ile 2k durum (4 FF → 8 zamanlama sinyali) üretir.\n• Kolay Kod Çözme: Her Johnson durumu yalnızca 2 girişli bir AND kapısıyla hatasız çözülür.',
+        },
+        formulaOrCode: 'k-bit Ring = k states (D_0 = Q_(k-1))   |   k-bit Johnson = 2k states (D_0 = Q_(k-1)\')',
+        pdfPage: 368,
+        slidePage: 9,
       },
     ],
   },

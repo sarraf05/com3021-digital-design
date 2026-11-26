@@ -21,210 +21,26 @@ import {
   getTextbookEntryForPage,
 } from '../../data/textbookMap';
 import { UI_STRINGS } from '../../i18n/translations';
+import {
+  PDF_MAX_SCALE,
+  PDF_MIN_SCALE,
+  clampPdfScale,
+  usePdfGestures,
+} from '../../hooks/usePdfGestures';
 
-const OFFLINE_BOOK_CACHE = 'dd-offline-book-v1';
-
-const PDFJS_CDN_URL =
-  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-const PDFJS_WORKER_URL =
-  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-
-interface PdfViewport {
-  width: number;
-  height: number;
-}
-
-interface PdfRenderTask {
-  promise: Promise<void>;
-  cancel: () => void;
-}
-
-interface PdfPageProxy {
-  getViewport: (opts: { scale: number }) => PdfViewport;
-  render: (params: {
-    canvasContext: CanvasRenderingContext2D;
-    viewport: PdfViewport;
-    transform?: number[];
-  }) => PdfRenderTask;
-}
-
-interface PdfDocumentProxy {
-  numPages: number;
-  getPage: (pageNumber: number) => Promise<PdfPageProxy>;
-  destroy?: () => Promise<void>;
-}
-
-interface PdfLoadingTask {
-  promise: Promise<PdfDocumentProxy>;
-  destroy?: () => Promise<void>;
-}
-
-interface PdfDocumentInitParams {
-  url?: string;
-  data?: ArrayBuffer | Uint8Array;
-  disableAutoFetch?: boolean;
-  rangeChunkSize?: number;
-  disableWorker?: boolean;
-}
-
-interface PdfJsGlobal {
-  GlobalWorkerOptions: { workerSrc: string };
-  getDocument: (src: string | PdfDocumentInitParams) => PdfLoadingTask;
-}
-
-declare global {
-  interface Window {
-    pdfjsLib?: PdfJsGlobal;
-  }
-}
-
-interface WorkerConfig {
-  workerSrc: string;
-  disableWorker: boolean;
-}
-
-function hasCacheStorage(): boolean {
-  return typeof window !== 'undefined' && 'caches' in window;
-}
-
-let pdfJsLoadPromise: Promise<PdfJsGlobal> | null = null;
-let cachedWorkerBlobUrl: string | null = null;
-
-async function resolveWorkerConfig(): Promise<WorkerConfig> {
-  if (cachedWorkerBlobUrl) {
-    return { workerSrc: cachedWorkerBlobUrl, disableWorker: false };
-  }
-
-  // 1. Try Cache API first if available (offline-saved worker)
-  if (hasCacheStorage()) {
-    try {
-      const cachedWorker = await caches.match(PDFJS_WORKER_URL);
-      if (cachedWorker) {
-        const workerText = await cachedWorker.text();
-        if (workerText.length > 0) {
-          const blob = new Blob([workerText], { type: 'application/javascript' });
-          cachedWorkerBlobUrl = URL.createObjectURL(blob);
-          return { workerSrc: cachedWorkerBlobUrl, disableWorker: false };
-        }
-      }
-    } catch {
-      // Fall through to network fetch + Blob URL
-    }
-  }
-
-  // 2. Fetch worker script as text and create same-origin Blob URL (bypasses Safari cross-origin Worker block)
-  try {
-    const response = await fetch(PDFJS_WORKER_URL, { mode: 'cors' });
-    if (!response.ok) {
-      throw new Error(`Worker fetch HTTP ${response.status}`);
-    }
-    const workerText = await response.text();
-    if (!workerText || workerText.length === 0) {
-      throw new Error('Empty worker script');
-    }
-    const blob = new Blob([workerText], { type: 'application/javascript' });
-    cachedWorkerBlobUrl = URL.createObjectURL(blob);
-    return { workerSrc: cachedWorkerBlobUrl, disableWorker: false };
-  } catch {
-    // 3. Fallback: disable Web Worker so PDF.js runs cleanly on main thread in restricted WebKit contexts
-    return { workerSrc: PDFJS_WORKER_URL, disableWorker: true };
-  }
-}
-
-async function ensurePdfJsLoaded(): Promise<{
-  pdfjsLib: PdfJsGlobal;
-  disableWorker: boolean;
-}> {
-  if (typeof window === 'undefined') {
-    return Promise.reject(new Error('Window unavailable'));
-  }
-
-  const workerConfig = await resolveWorkerConfig();
-
-  if (window.pdfjsLib) {
-    window.pdfjsLib.GlobalWorkerOptions.workerSrc = workerConfig.workerSrc;
-    return {
-      pdfjsLib: window.pdfjsLib,
-      disableWorker: workerConfig.disableWorker,
-    };
-  }
-
-  if (!pdfJsLoadPromise) {
-    pdfJsLoadPromise = (async () => {
-      let scriptBlobUrl: string | null = null;
-      if (hasCacheStorage()) {
-        try {
-          const cachedScript = await caches.match(PDFJS_CDN_URL);
-          if (cachedScript) {
-            const scriptText = await cachedScript.text();
-            if (scriptText.length > 0) {
-              scriptBlobUrl = URL.createObjectURL(
-                new Blob([scriptText], { type: 'application/javascript' })
-              );
-            }
-          }
-        } catch {
-          // Fallback to network CDN script
-        }
-      }
-
-      return new Promise<PdfJsGlobal>((resolve, reject) => {
-        const existingScript = document.querySelector<HTMLScriptElement>(
-          `script[data-pdfjs-cdn="true"]`
-        );
-
-        const finalize = () => {
-          if (scriptBlobUrl) {
-            URL.revokeObjectURL(scriptBlobUrl);
-            scriptBlobUrl = null;
-          }
-          if (window.pdfjsLib) {
-            window.pdfjsLib.GlobalWorkerOptions.workerSrc = workerConfig.workerSrc;
-            resolve(window.pdfjsLib);
-          } else {
-            pdfJsLoadPromise = null;
-            reject(new Error('pdfjsLib did not initialize'));
-          }
-        };
-
-        const handleError = () => {
-          if (scriptBlobUrl) {
-            URL.revokeObjectURL(scriptBlobUrl);
-            scriptBlobUrl = null;
-          }
-          pdfJsLoadPromise = null;
-          reject(new Error('Failed to load PDF.js script from CDN'));
-        };
-
-        if (existingScript && window.pdfjsLib) {
-          finalize();
-          return;
-        }
-
-        if (existingScript) {
-          existingScript.addEventListener('load', finalize, { once: true });
-          existingScript.addEventListener('error', handleError, { once: true });
-          return;
-        }
-
-        const script = document.createElement('script');
-        script.dataset.pdfjsCdn = 'true';
-        script.src = scriptBlobUrl || PDFJS_CDN_URL;
-        script.async = true;
-        script.onload = finalize;
-        script.onerror = handleError;
-        document.head.appendChild(script);
-      });
-    })();
-  }
-
-  const pdfjsLib = await pdfJsLoadPromise;
-  pdfjsLib.GlobalWorkerOptions.workerSrc = workerConfig.workerSrc;
-  return {
-    pdfjsLib,
-    disableWorker: workerConfig.disableWorker,
-  };
-}
+import {
+  OFFLINE_BOOK_CACHE,
+  PDFJS_CDN_URL,
+  PDFJS_WORKER_URL,
+  ensurePdfJsLoaded,
+  hasCacheStorage,
+  resetCachedWorkerBlobUrl,
+  resolveWorkerConfig,
+  type PdfDocumentInitParams,
+  type PdfDocumentProxy,
+  type PdfLoadingTask,
+  type PdfRenderTask,
+} from '../../utils/pdfJsLoader';
 
 interface BookViewerProps {
   currentPage: number;
@@ -263,9 +79,24 @@ export const BookViewer: React.FC<BookViewerProps> = ({
   const pdfDocRef = useRef<PdfDocumentProxy | null>(null);
   const renderTaskRef = useRef<PdfRenderTask | null>(null);
   const renderSeqRef = useRef<number>(0);
+  const lastScrolledPageRef = useRef<number | null>(null);
+
+  const gestures = usePdfGestures({
+    stageRef,
+    scale: zoomScale,
+    onScaleChange: setZoomScale,
+    onNextPage: () =>
+      onPageChange(Math.min(totalPages, Math.max(BOOK_MIN_PAGE, currentPage + 1))),
+    onPrevPage: () =>
+      onPageChange(Math.max(BOOK_MIN_PAGE, currentPage - 1)),
+    disabled: Boolean(errorMsg) || docLoading,
+  });
 
   useEffect(() => {
     setPageInput(String(currentPage));
+    if (stageRef.current) {
+      stageRef.current.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }
   }, [currentPage]);
 
   useEffect(() => {
@@ -453,6 +284,11 @@ export const BookViewer: React.FC<BookViewerProps> = ({
       canvas.style.width = `${Math.floor(viewport.width)}px`;
       canvas.style.height = `${Math.floor(viewport.height)}px`;
 
+      if (lastScrolledPageRef.current !== safePage) {
+        lastScrolledPageRef.current = safePage;
+        stage.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      }
+
       activeTask = page.render({
         canvasContext: context,
         viewport,
@@ -523,7 +359,7 @@ export const BookViewer: React.FC<BookViewerProps> = ({
 
       // Upgrade active workerSrc to Blob URL backed by cached worker script
       if (window.pdfjsLib) {
-        cachedWorkerBlobUrl = null;
+        resetCachedWorkerBlobUrl();
         const workerConfig = await resolveWorkerConfig();
         window.pdfjsLib.GlobalWorkerOptions.workerSrc = workerConfig.workerSrc;
       }
@@ -589,11 +425,11 @@ export const BookViewer: React.FC<BookViewerProps> = ({
   };
 
   const handleZoomOut = () => {
-    setZoomScale((z) => Math.max(0.6, Number((z - 0.15).toFixed(2))));
+    setZoomScale((z) => clampPdfScale(z - 0.15));
   };
 
   const handleZoomIn = () => {
-    setZoomScale((z) => Math.min(2.4, Number((z + 0.15).toFixed(2))));
+    setZoomScale((z) => clampPdfScale(z + 0.15));
   };
 
   const supportsCacheApi = hasCacheStorage();
@@ -719,8 +555,16 @@ export const BookViewer: React.FC<BookViewerProps> = ({
       <div className="relative w-full h-[calc(100dvh-115px)] rounded-2xl border-2 border-slate-200 bg-slate-100/90 shadow-inner overflow-hidden">
         <div
           ref={stageRef}
+          onMouseDown={gestures.onMouseDown}
+          style={{ touchAction: gestures.canPan ? 'pan-x pan-y' : 'pan-y' }}
           className={`w-full h-full px-3 pt-3 pb-20 flex flex-col ${
-            zoomScale > 1 ? 'overflow-auto' : 'overflow-y-auto overflow-x-hidden'
+            gestures.canPan ? 'overflow-auto' : 'overflow-y-auto overflow-x-hidden'
+          } ${
+            gestures.canPan
+              ? gestures.isDragging
+                ? 'cursor-grabbing select-none'
+                : 'cursor-grab'
+              : ''
           }`}
         >
           {(docLoading || pageRendering) && !errorMsg && (
@@ -780,10 +624,12 @@ export const BookViewer: React.FC<BookViewerProps> = ({
               </div>
             </div>
           ) : (
-            <canvas
-              ref={canvasRef}
-              className="rounded-xl bg-white shadow-md border border-slate-200/80 block shrink-0 mx-auto"
-            />
+            <div className="mx-auto shrink-0" style={gestures.wrapperStyle}>
+              <canvas
+                ref={canvasRef}
+                className="rounded-xl bg-white shadow-md border border-slate-200/80 block shrink-0 mx-auto"
+              />
+            </div>
           )}
         </div>
 
@@ -837,12 +683,12 @@ export const BookViewer: React.FC<BookViewerProps> = ({
 
             <div className="h-5 w-px bg-slate-200 shrink-0" aria-hidden="true" />
 
-            {/* Zoom Controls (- / optional % reset / +) */}
+            {/* Zoom Controls (- / % reset / +) */}
             <div className="flex items-center gap-1 shrink-0">
               <button
                 type="button"
                 onClick={handleZoomOut}
-                disabled={zoomScale <= 0.6}
+                disabled={zoomScale <= PDF_MIN_SCALE}
                 title={ui.book.zoomOutTitle}
                 aria-label={ui.book.zoomOutTitle}
                 className="w-8 h-8 rounded-full hover:bg-violet-50 active:bg-violet-100 disabled:opacity-35 disabled:cursor-not-allowed text-slate-700 flex items-center justify-center transition-colors cursor-pointer"
@@ -854,15 +700,15 @@ export const BookViewer: React.FC<BookViewerProps> = ({
                 type="button"
                 onClick={() => setZoomScale(1)}
                 title={ui.book.resetZoomTitle}
-                className="hidden sm:inline-flex items-center justify-center h-7 px-2 rounded-full hover:bg-violet-50 font-mono text-[11px] font-extrabold text-slate-600 tabular-nums transition-colors cursor-pointer"
+                className="inline-flex items-center justify-center h-7 px-2 rounded-full hover:bg-violet-50 font-mono text-[11px] font-extrabold text-slate-600 tabular-nums transition-colors cursor-pointer"
               >
-                {Math.round(zoomScale * 100)}%
+                {Math.round(gestures.liveScale * 100)}%
               </button>
 
               <button
                 type="button"
                 onClick={handleZoomIn}
-                disabled={zoomScale >= 2.4}
+                disabled={zoomScale >= PDF_MAX_SCALE}
                 title={ui.book.zoomInTitle}
                 aria-label={ui.book.zoomInTitle}
                 className="w-8 h-8 rounded-full hover:bg-violet-50 active:bg-violet-100 disabled:opacity-35 disabled:cursor-not-allowed text-slate-700 flex items-center justify-center transition-colors cursor-pointer"

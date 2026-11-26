@@ -5,13 +5,24 @@ import {
   ChevronLeft,
   ChevronRight,
   Cpu,
+  FileText,
+  Layers,
   Lightbulb,
   ListChecks,
+  Presentation,
   Sigma,
   Sparkles,
 } from 'lucide-react';
 import type { FocusCard, WeekCurriculum } from '../../data/curriculum';
-import { useSession, type FocusLangMode } from '../../context/SessionContext';
+import { getDetailedLectureByCardId } from '../../data/detailedLectures';
+import {
+  useSession,
+  type FocusLangMode,
+  type FocusSourceTab,
+  type FocusStudyMode,
+} from '../../context/SessionContext';
+import { DetailedLectureView } from './DetailedLectureView';
+import { EmbeddedPdfStage } from './EmbeddedPdfStage';
 
 interface FocusCardDeckProps {
   weekCurriculum: WeekCurriculum;
@@ -118,14 +129,23 @@ export const FocusCardDeck: React.FC<FocusCardDeckProps> = ({
   hasPracticeTab = false,
   onGoToPractice,
 }) => {
-  const { session, setFocusLangMode, openBookAtPage, openLabWithPreset } =
-    useSession();
+  const {
+    session,
+    setFocusLangMode,
+    setFocusSourceTab,
+    setFocusStudyMode,
+    openBookAtPage,
+    openLabWithPreset,
+  } = useSession();
   const focusLangMode = session.focusLangMode;
+  const focusSourceTab = session.focusSourceTab;
+  const focusStudyMode = session.focusStudyMode;
 
   const cards = weekCurriculum.cards;
   const total = cards.length;
   const safeIndex = total > 0 ? Math.min(Math.max(0, currentIndex), total - 1) : 0;
   const card = cards[safeIndex];
+  const detailedEntry = card ? getDetailedLectureByCardId(card.id) : undefined;
 
   useEffect(() => {
     if (total === 0) return;
@@ -163,13 +183,113 @@ export const FocusCardDeck: React.FC<FocusCardDeckProps> = ({
   const progressPercent = Math.round(((safeIndex + 1) / total) * 100);
   const isEnOnly = focusLangMode === 'en';
 
+  const sourceTabs: {
+    id: FocusSourceTab;
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+    activeClass: string;
+  }[] = [
+    {
+      id: 'site',
+      label: isEnOnly ? 'Site Notes' : 'Site Anlatımı',
+      icon: Layers,
+      activeClass:
+        'bg-white text-violet-900 border border-violet-300 border-b-2 border-b-violet-500 shadow-xs',
+    },
+    {
+      id: 'slide',
+      label: isEnOnly
+        ? `Slides (${weekCurriculum.lectureCode})`
+        : `Slayt (${weekCurriculum.lectureCode})`,
+      icon: Presentation,
+      activeClass:
+        'bg-white text-sky-900 border border-sky-300 border-b-2 border-b-sky-500 shadow-xs',
+    },
+    {
+      id: 'book',
+      label: isEnOnly ? 'Book (Mano 6th Ed.)' : 'Kitap (Mano 6th Ed.)',
+      icon: BookMarked,
+      activeClass:
+        'bg-white text-amber-950 border border-amber-300 border-b-2 border-b-amber-500 shadow-xs',
+    },
+  ];
+
+  const activeCardHeading =
+    focusLangMode === 'en'
+      ? card.title.en
+      : focusLangMode === 'tr'
+        ? card.title.tr
+        : `${card.title.en} / ${card.title.tr}`;
+
+  const studyModes: {
+    id: FocusStudyMode;
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+  }[] = [
+    {
+      id: 'summary',
+      label:
+        focusLangMode === 'en'
+          ? 'Summary'
+          : focusLangMode === 'tr'
+            ? 'Özet'
+            : 'Özet · Summary',
+      icon: Layers,
+    },
+    {
+      id: 'detailed',
+      label:
+        focusLangMode === 'en'
+          ? 'Detailed Lecture'
+          : focusLangMode === 'tr'
+            ? 'Detaylı Anlatım'
+            : 'Detaylı · Detailed',
+      icon: FileText,
+    },
+  ];
+
   return (
-    <div className="space-y-3.5">
-      {/* Focus Mode Top Bar: Language Mode Switcher + Progress Indicator */}
+    <div className="space-y-3.5 min-w-0 max-w-full">
+      {/* Focus Mode Top Bar: Language Mode + Study Mode + 3-Source Selector + Progress Indicator */}
       <div className="rounded-2xl border-2 border-slate-200/90 bg-white px-3.5 py-2.5 shadow-2xs space-y-2.5">
-        <div className="flex flex-wrap items-center justify-between gap-2.5">
-          {/* Language Mode Selector: EN | TR | Bilingual */}
-          <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto min-w-0">
+            {/* Dual-Mode Segmented Switcher: Özet / Summary | Detaylı Anlatım / Detailed Lecture */}
+            <div
+              role="tablist"
+              aria-label={isEnOnly ? 'Lecture Depth Mode' : 'Anlatım Derinliği'}
+              className="w-full grid grid-cols-2 sm:w-auto sm:inline-grid bg-indigo-50/80 border-2 border-indigo-200/80 rounded-xl p-0.5 gap-0.5"
+            >
+              {studyModes.map((mode) => {
+                const ModeIcon = mode.icon;
+                const active =
+                  focusSourceTab === 'site' && focusStudyMode === mode.id;
+                return (
+                  <button
+                    key={mode.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => {
+                      setFocusStudyMode(mode.id);
+                      if (focusSourceTab !== 'site') {
+                        setFocusSourceTab('site');
+                      }
+                    }}
+                    className={`min-h-[36px] sm:min-h-[32px] px-2.5 sm:px-3 py-1 rounded-lg text-[11px] sm:text-xs font-display font-extrabold inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+                      active
+                        ? 'bg-white text-indigo-950 border border-indigo-300 border-b-2 border-b-indigo-500 shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 border border-transparent'
+                    }`}
+                  >
+                    <ModeIcon className="w-3.5 h-3.5 shrink-0" />
+                    <span>{mode.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Language Mode Selector: EN | TR | Bilingual */}
             <div
               role="group"
               aria-label={isEnOnly ? 'Card Language Mode' : 'Kart Dil Modu'}
@@ -195,15 +315,38 @@ export const FocusCardDeck: React.FC<FocusCardDeckProps> = ({
               })}
             </div>
 
-            <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-mono font-bold text-slate-500 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg">
-              <span>{weekCurriculum.lectureCode}</span>
-              <span aria-hidden="true">·</span>
-              <span>{weekCurriculum.bookSection}</span>
-            </span>
+            {/* 3-Source Segmented Selector: Site Anlatımı | Slayt | Kitap */}
+            <div
+              role="tablist"
+              aria-label={isEnOnly ? 'Study Source' : 'Anlatım Kaynağı'}
+              className="max-w-full bg-slate-100/90 border-2 border-slate-200/90 rounded-xl p-0.5 inline-flex flex-wrap items-center gap-0.5"
+            >
+              {sourceTabs.map((tab) => {
+                const TabIcon = tab.icon;
+                const active = focusSourceTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => setFocusSourceTab(tab.id)}
+                    className={`min-h-[32px] px-2.5 py-1 rounded-lg text-[11px] font-display font-extrabold inline-flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+                      active
+                        ? tab.activeClass
+                        : 'text-slate-600 hover:text-slate-900 border border-transparent'
+                    }`}
+                  >
+                    <TabIcon className="w-3.5 h-3.5 shrink-0" />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Step Dots + Progress Counter */}
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="flex flex-wrap items-center gap-2 ml-auto">
             <div className="flex items-center gap-1">
               {cards.map((c, idx) => {
                 const isCurrent = idx === safeIndex;
@@ -244,105 +387,194 @@ export const FocusCardDeck: React.FC<FocusCardDeckProps> = ({
         </div>
       </div>
 
-      {/* Single Distraction-Free Focus Card */}
-      <article
-        className={`rounded-3xl border-2 border-slate-200 border-b-4 ${meta.leftStripe} bg-white p-4 sm:p-6 shadow-sm space-y-4`}
-      >
-        {/* Card Type Badge + Book Page Pill */}
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <span
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-[11px] font-display font-extrabold ${meta.badge}`}
-          >
-            <TypeIcon className="w-3.5 h-3.5 shrink-0" />
-            <span>{meta.labels[focusLangMode]}</span>
-          </span>
+      {/* Active Source Content */}
+      {focusSourceTab === 'site' ? (
+        focusStudyMode === 'detailed' && detailedEntry ? (
+          <DetailedLectureView
+            card={card}
+            weekCurriculum={weekCurriculum}
+            detailed={detailedEntry}
+            focusLangMode={focusLangMode}
+            onOpenSlide={() => setFocusSourceTab('slide')}
+            onOpenBook={() => setFocusSourceTab('book')}
+            onOpenLab={
+              weekCurriculum.labPreset
+                ? () => openLabWithPreset(weekCurriculum.labPreset!)
+                : undefined
+            }
+          />
+        ) : (
+        <article
+          className={`rounded-3xl border-2 border-slate-200 border-b-4 ${meta.leftStripe} bg-white p-4 sm:p-6 shadow-sm space-y-4`}
+        >
+          {/* Card Type Badge + Slide/Book Page Reference */}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-[11px] font-display font-extrabold ${meta.badge}`}
+            >
+              <TypeIcon className="w-3.5 h-3.5 shrink-0" />
+              <span>{meta.labels[focusLangMode]}</span>
+            </span>
 
-          <span className="font-mono text-[11px] font-bold text-slate-500 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg">
-            Mano &amp; Ciletti (6th Ed.) · {isEnOnly ? 'p.' : 's.'} {card.pdfPage}
-          </span>
-        </div>
-
-        {/* Bilingual / EN / TR Content */}
-        {focusLangMode === 'bilingual' ? (
-          <div className="space-y-4">
-            {/* English Technical Explanation (Top) */}
-            <div className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-3.5 sm:p-4 space-y-2.5">
-              <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded-md bg-sky-100 text-sky-800 border border-sky-200 font-mono text-[10px] font-extrabold tracking-wide">
-                  EN
-                </span>
-                <h3 className="font-display text-base sm:text-lg font-black text-slate-900 leading-snug">
-                  {card.title.en}
-                </h3>
-              </div>
-              {renderFormattedLines(card.content.en, meta.bulletDot)}
-            </div>
-
-            {/* Turkish Explanation (Bottom) */}
-            <div className="rounded-2xl border border-amber-200/80 bg-[#FFFDF8] p-3.5 sm:p-4 space-y-2.5">
-              <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-200 font-mono text-[10px] font-extrabold tracking-wide">
-                  TR
-                </span>
-                <h4 className="font-display text-sm sm:text-base font-extrabold text-slate-800 leading-snug">
-                  {card.title.tr}
-                </h4>
-              </div>
-              {renderFormattedLines(card.content.tr, meta.bulletDot)}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="font-mono text-[11px] font-bold text-sky-700 bg-sky-50 border border-sky-200 px-2.5 py-1 rounded-lg">
+                {weekCurriculum.lectureCode} · {isEnOnly ? 'Slide p.' : 'Slayt s.'}{' '}
+                {card.slidePage}
+              </span>
+              <span className="font-mono text-[11px] font-bold text-slate-500 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg">
+                Mano &amp; Ciletti (6th Ed.) · {isEnOnly ? 'p.' : 's.'} {card.pdfPage}
+              </span>
             </div>
           </div>
-        ) : (
-          <div className="space-y-3">
-            <h3 className="font-display text-lg sm:text-xl font-black text-slate-900 leading-snug">
-              {focusLangMode === 'en' ? card.title.en : card.title.tr}
-            </h3>
-            {renderFormattedLines(
-              focusLangMode === 'en' ? card.content.en : card.content.tr,
-              meta.bulletDot
+
+          {/* Bilingual / EN / TR Content */}
+          {focusLangMode === 'bilingual' ? (
+            <div className="space-y-4">
+              {/* English Technical Explanation (Top) */}
+              <div className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-3.5 sm:p-4 space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded-md bg-sky-100 text-sky-800 border border-sky-200 font-mono text-[10px] font-extrabold tracking-wide">
+                    EN
+                  </span>
+                  <h3 className="font-display text-base sm:text-lg font-black text-slate-900 leading-snug">
+                    {card.title.en}
+                  </h3>
+                </div>
+                {renderFormattedLines(card.content.en, meta.bulletDot)}
+              </div>
+
+              {/* Turkish Explanation (Bottom) */}
+              <div className="rounded-2xl border border-amber-200/80 bg-[#FFFDF8] p-3.5 sm:p-4 space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-200 font-mono text-[10px] font-extrabold tracking-wide">
+                    TR
+                  </span>
+                  <h4 className="font-display text-sm sm:text-base font-extrabold text-slate-800 leading-snug">
+                    {card.title.tr}
+                  </h4>
+                </div>
+                {renderFormattedLines(card.content.tr, meta.bulletDot)}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <h3 className="font-display text-lg sm:text-xl font-black text-slate-900 leading-snug">
+                {focusLangMode === 'en' ? card.title.en : card.title.tr}
+              </h3>
+              {renderFormattedLines(
+                focusLangMode === 'en' ? card.content.en : card.content.tr,
+                meta.bulletDot
+              )}
+            </div>
+          )}
+
+          {/* Centered Highlighted Formula / Code Box */}
+          {card.formulaOrCode && (
+            <div className="rounded-2xl border-2 border-indigo-200/90 bg-gradient-to-r from-indigo-50/90 via-sky-50/80 to-indigo-50/90 px-4 py-3 text-center overflow-x-auto shadow-2xs">
+              <code className="font-mono text-xs sm:text-sm font-extrabold text-indigo-950 whitespace-pre-wrap break-words">
+                {card.formulaOrCode}
+              </code>
+            </div>
+          )}
+
+          {/* Card Action Footer: Open in Slide + Open in Book + Try in Simulation Lab */}
+          <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setFocusSourceTab('slide')}
+                className="min-h-[40px] px-3.5 py-2 rounded-2xl border-2 border-sky-300 border-b-4 bg-sky-50 hover:bg-sky-100 active:border-b-2 active:translate-y-0.5 text-sky-900 text-xs font-display font-extrabold inline-flex items-center gap-2 transition-all cursor-pointer"
+              >
+                <Presentation className="w-4 h-4 text-sky-600 shrink-0" />
+                <span>
+                  {isEnOnly
+                    ? `Open in Slide (p. ${card.slidePage})`
+                    : `Slaytta Aç (s. ${card.slidePage})`}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setFocusSourceTab('book')}
+                className="min-h-[40px] px-3.5 py-2 rounded-2xl border-2 border-amber-300 border-b-4 bg-amber-50 hover:bg-amber-100 active:border-b-2 active:translate-y-0.5 text-amber-950 text-xs font-display font-extrabold inline-flex items-center gap-2 transition-all cursor-pointer"
+              >
+                <BookMarked className="w-4 h-4 text-amber-700 shrink-0" />
+                <span>
+                  {isEnOnly
+                    ? `Open in Book (PDF p. ${card.pdfPage})`
+                    : `Kitapta Aç (PDF s. ${card.pdfPage})`}
+                </span>
+              </button>
+            </div>
+
+            {weekCurriculum.labPreset && (
+              <button
+                type="button"
+                onClick={() => openLabWithPreset(weekCurriculum.labPreset!)}
+                className="min-h-[40px] px-3.5 py-2 rounded-2xl border-2 border-emerald-500 border-b-4 bg-emerald-500 hover:bg-emerald-600 active:border-b-2 active:translate-y-0.5 text-white text-xs font-display font-extrabold inline-flex items-center gap-2 transition-all shadow-xs cursor-pointer"
+              >
+                <Cpu className="w-4 h-4 shrink-0" />
+                <span>
+                  {isEnOnly ? 'Try in Simulation Lab' : "Simülasyon Lab'da Dene"}
+                </span>
+              </button>
             )}
           </div>
-        )}
-
-        {/* Centered Highlighted Formula / Code Box */}
-        {card.formulaOrCode && (
-          <div className="rounded-2xl border-2 border-indigo-200/90 bg-gradient-to-r from-indigo-50/90 via-sky-50/80 to-indigo-50/90 px-4 py-3 text-center overflow-x-auto shadow-2xs">
-            <code className="font-mono text-xs sm:text-sm font-extrabold text-indigo-950 whitespace-pre-wrap break-words">
-              {card.formulaOrCode}
-            </code>
-          </div>
-        )}
-
-        {/* Card Action Footer: Open PDF Page + Try in Simulation Lab */}
-        <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2.5">
-          <button
-            type="button"
-            onClick={() => openBookAtPage(card.pdfPage)}
-            className="min-h-[40px] px-3.5 py-2 rounded-2xl border-2 border-amber-300 border-b-4 bg-amber-50 hover:bg-amber-100 active:border-b-2 active:translate-y-0.5 text-amber-950 text-xs font-display font-extrabold inline-flex items-center gap-2 transition-all cursor-pointer"
-          >
-            <BookMarked className="w-4 h-4 text-amber-700 shrink-0" />
-            <span>
-              {isEnOnly
-                ? `Open PDF p. ${card.pdfPage}`
-                : `PDF s. ${card.pdfPage}'de Aç`}
-            </span>
-          </button>
-
-          {weekCurriculum.labPreset && (
-            <button
-              type="button"
-              onClick={() => openLabWithPreset(weekCurriculum.labPreset!)}
-              className="min-h-[40px] px-3.5 py-2 rounded-2xl border-2 border-emerald-500 border-b-4 bg-emerald-500 hover:bg-emerald-600 active:border-b-2 active:translate-y-0.5 text-white text-xs font-display font-extrabold inline-flex items-center gap-2 transition-all shadow-xs cursor-pointer"
-            >
-              <Cpu className="w-4 h-4 shrink-0" />
-              <span>
-                {isEnOnly ? 'Try in Simulation Lab' : "Simülasyon Lab'da Dene"}
+        </article>
+        )
+      ) : (
+        <div className="space-y-2.5">
+          {/* Compact Active Card Context Banner above Embedded PDF */}
+          <div className="rounded-2xl border-2 border-slate-200/90 bg-white px-3.5 py-2 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <span
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] font-display font-extrabold shrink-0 ${meta.badge}`}
+              >
+                <TypeIcon className="w-3 h-3" />
+                <span>{meta.labels[focusLangMode]}</span>
               </span>
-            </button>
-          )}
-        </div>
-      </article>
+              <span className="text-xs sm:text-sm font-display font-extrabold text-slate-800 truncate">
+                {activeCardHeading}
+              </span>
+            </div>
 
-      {/* Bottom Prev / Next Navigation + Keyboard Hint */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => setFocusSourceTab('site')}
+                className="min-h-[30px] px-2.5 py-1 rounded-xl border border-violet-200 bg-violet-50 hover:bg-violet-100 text-[11px] font-bold text-violet-800 transition-colors cursor-pointer"
+              >
+                {isEnOnly ? 'Back to Notes' : 'Site Anlatımına Dön'}
+              </button>
+              {weekCurriculum.labPreset && (
+                <button
+                  type="button"
+                  onClick={() => openLabWithPreset(weekCurriculum.labPreset!)}
+                  className="min-h-[30px] px-2.5 py-1 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-[11px] font-bold text-emerald-800 inline-flex items-center gap-1 transition-colors cursor-pointer"
+                >
+                  <Cpu className="w-3 h-3" />
+                  <span>Lab</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          <EmbeddedPdfStage
+            mode={focusSourceTab === 'slide' ? 'slide' : 'book'}
+            targetPage={focusSourceTab === 'slide' ? card.slidePage : card.pdfPage}
+            slideFile={weekCurriculum.slideFile}
+            lectureCode={weekCurriculum.lectureCode}
+            isEnOnly={isEnOnly}
+            onOpenFullBook={
+              focusSourceTab === 'book'
+                ? (page) => openBookAtPage(page)
+                : undefined
+            }
+          />
+        </div>
+      )}
+
+      {/* Bottom Prev / Next Card Navigation + Keyboard Hint */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <button
           type="button"

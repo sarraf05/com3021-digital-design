@@ -21,6 +21,8 @@ export type MainView = 'curriculum' | 'tools' | 'simulator' | 'book';
 export type LessonViewMode = 'full' | 'focus';
 export type FocusSubTab = 'theory' | 'practice';
 export type FocusLangMode = 'en' | 'tr' | 'bilingual';
+export type FocusSourceTab = 'site' | 'slide' | 'book';
+export type FocusStudyMode = 'summary' | 'detailed';
 
 export interface QuestionSessionState {
   selectedOption?: number | null;
@@ -99,6 +101,8 @@ export interface SessionState {
   activeView: MainView;
   lessonViewMode: LessonViewMode;
   focusLangMode: FocusLangMode;
+  focusSourceTab: FocusSourceTab;
+  focusStudyMode: FocusStudyMode;
   focusSubTab: FocusSubTab;
   focusStepByWeek: Record<number, number>;
   focusQuestionByWeek: Record<number, number>;
@@ -131,6 +135,8 @@ function createInitialSessionState(): SessionState {
     activeView: 'curriculum',
     lessonViewMode: 'full',
     focusLangMode: 'bilingual',
+    focusSourceTab: 'site',
+    focusStudyMode: 'summary',
     focusSubTab: 'theory',
     focusStepByWeek: {},
     focusQuestionByWeek: {},
@@ -141,7 +147,7 @@ function createInitialSessionState(): SessionState {
     labCircuit: null,
     challengeCircuits: {},
     customICs: [],
-    bookPage: 25,
+    bookPage: 18,
     tools: {},
   };
 }
@@ -176,6 +182,19 @@ function readFromSessionStorage(): SessionState {
       parsed.focusLangMode === 'bilingual'
         ? parsed.focusLangMode
         : fallback.focusLangMode;
+
+    const focusSourceTab: FocusSourceTab =
+      parsed.focusSourceTab === 'site' ||
+      parsed.focusSourceTab === 'slide' ||
+      parsed.focusSourceTab === 'book'
+        ? parsed.focusSourceTab
+        : fallback.focusSourceTab;
+
+    const focusStudyMode: FocusStudyMode =
+      parsed.focusStudyMode === 'summary' ||
+      parsed.focusStudyMode === 'detailed'
+        ? parsed.focusStudyMode
+        : fallback.focusStudyMode;
 
     const focusSubTab: FocusSubTab =
       parsed.focusSubTab === 'theory' || parsed.focusSubTab === 'practice'
@@ -246,6 +265,8 @@ function readFromSessionStorage(): SessionState {
       activeView,
       lessonViewMode,
       focusLangMode,
+      focusSourceTab,
+      focusStudyMode,
       focusSubTab,
       focusStepByWeek,
       focusQuestionByWeek,
@@ -289,6 +310,8 @@ interface SessionContextValue {
   setActiveView: (view: MainView) => void;
   setLessonViewMode: (mode: LessonViewMode) => void;
   setFocusLangMode: (mode: FocusLangMode) => void;
+  setFocusSourceTab: (tab: FocusSourceTab) => void;
+  setFocusStudyMode: (mode: FocusStudyMode) => void;
   setFocusSubTab: (tab: FocusSubTab) => void;
   setFocusStepForWeek: (weekId: number, stepIndex: number) => void;
   setFocusQuestionForWeek: (weekId: number, questionIndex: number) => void;
@@ -413,6 +436,18 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({
   const setFocusLangMode = useCallback((focusLangMode: FocusLangMode) => {
     setSession((prev) =>
       prev.focusLangMode === focusLangMode ? prev : { ...prev, focusLangMode }
+    );
+  }, []);
+
+  const setFocusSourceTab = useCallback((focusSourceTab: FocusSourceTab) => {
+    setSession((prev) =>
+      prev.focusSourceTab === focusSourceTab ? prev : { ...prev, focusSourceTab }
+    );
+  }, []);
+
+  const setFocusStudyMode = useCallback((focusStudyMode: FocusStudyMode) => {
+    setSession((prev) =>
+      prev.focusStudyMode === focusStudyMode ? prev : { ...prev, focusStudyMode }
     );
   }, []);
 
@@ -608,6 +643,8 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({
         setActiveView,
         setLessonViewMode,
         setFocusLangMode,
+        setFocusSourceTab,
+        setFocusStudyMode,
         setFocusSubTab,
         setFocusStepForWeek,
         setFocusQuestionForWeek,
